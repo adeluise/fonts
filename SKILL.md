@@ -25,6 +25,8 @@ You have access to the user's curated font list in `fonts.md` (in this skill's d
    - Set up CSS custom properties or `font-family` declarations with the correct fallback stack (see below)
    - Handle framework specifics (e.g., `next/font` for Next.js, global CSS for Vite, Tailwind config, etc.)
    - For non-Google fonts that require manual download, include the download link prominently
+   - For self-hosted fonts (Fontshare, Uncut, Collletttivo), subset the font files to the character sets the project actually needs. Tools like `glyphhanger` or `pyftsubset` can strip unused glyphs and cut file size significantly. Google Fonts handles this automatically via `unicode-range` splitting — no action needed there.
+   - When writing the base font declarations, include `-webkit-text-size-adjust: 100%` on the root element to prevent unexpected text resizing in landscape orientation on iOS.
 
 ## Fallback stacks
 
@@ -66,3 +68,5 @@ After the user selects their heading/body pairing, if the project type is **SaaS
 - Options: "yes, add a monospace" / "no, skip"
 
 If the user says yes, present the `code`-tagged fonts from `fonts.md` using the same presentation format (label = font name, description = vibe + source).
+
+When setting up fonts for SaaS apps, include `font-variant-numeric: tabular-nums` in the CSS for any element that displays numbers in alignment-sensitive contexts — tables, dashboards, metric cards, counters, or timers. This prevents digits from shifting layout as values change. Apply it scoped to those contexts, not globally.
