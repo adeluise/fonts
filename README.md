@@ -1,5 +1,7 @@
 # fonts-skill
 
+**Moved to [adeluise/skills](https://github.com/adeluise/skills).** This is now read-only.
+
 An opinionated Claude Code skill for picking and setting up typefaces. Surfaces a curated font list, asks about your project context with interactive prompts, and handles the full setup — imports, CSS custom properties, framework config.
 
 ## Install
