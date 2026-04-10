@@ -1,7 +1,5 @@
 # fonts-skill
 
-**Moved to [adeluise/skills](https://github.com/adeluise/skills).** This is now read-only.
-
 An opinionated Claude Code skill for picking and setting up typefaces. Surfaces a curated font list, asks about your project context with interactive prompts, and handles the full setup — imports, CSS custom properties, framework config.
 
 ## Install
@@ -32,7 +30,7 @@ You'll get prompts to select:
 
 1. **Project type** — marketing site, SaaS app, editorial/blog, portfolio
 2. **Vibe** — clean/minimal, bold/expressive, editorial/serious, friendly/warm
-3. **Role** — full pairing, headings only, body only
+3. **Hierarchy** — heading + body, heading only, body only
 
 Pick from the chips or choose "Other" to type your own answer.
 
@@ -57,7 +55,7 @@ I need a font pairing for a marketing landing page
 | Epilogue | Sans | Google Fonts | heading |
 | Geist | Sans | Google Fonts | heading, body |
 | Geist Mono | Mono | Google Fonts | code |
-| Necto Mono | Mono | Uncut | code |
+| Necto Mono | Mono | Collletttivo | code |
 | Newsreader | Serif | Google Fonts | heading, body |
 | Nyght Serif | Serif | Uncut | heading |
 | Ortica | Serif | Uncut | heading |

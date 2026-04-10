@@ -1,6 +1,7 @@
 ---
 name: fonts
 description: "Personal font reference and setup helper. Use when discussing typography, choosing fonts for a project, setting up font imports, or when the user is starting a new project and needs to pick typefaces."
+allowed-tools: Bash(curl *)
 ---
 
 # Font Selection & Setup
@@ -21,10 +22,10 @@ You have access to the user's curated font list in `fonts.md` (in this skill's d
    - Add the correct import method based on the font's source:
      - **Google Fonts**: `<link>` tag, CSS `@import`, or `next/font/google` depending on stack
      - **Fontshare**: CSS `@import` from their CDN, or provide download link for self-hosting
-     - **Uncut / Collletttivo**: Provide the download URL and set up `@font-face` declarations for self-hosting
+     - **GitHub-hosted self-hosted fonts** (Download column has a URL in `fonts.md`): Download the `.woff2` files using `curl` from the Download URL + filenames from the file manifest in `fonts.md`. Place them in the project's font directory (e.g., `public/fonts/` or `src/assets/fonts/`). Set up `@font-face` declarations pointing to the downloaded files. If the download fails, fall back to showing the URL column link and asking the user to download manually.
+     - **Manual-download fonts** (Download column = `manual`): Set up `@font-face` declarations with the correct file paths, then prominently tell the user to download the font files from the URL column and place them in the font directory. Do not bury this — make it the first thing the user sees after setup.
    - Set up CSS custom properties or `font-family` declarations with the correct fallback stack (see below)
    - Handle framework specifics (e.g., `next/font` for Next.js, global CSS for Vite, Tailwind config, etc.)
-   - For non-Google fonts that require manual download, include the download link prominently
    - For self-hosted fonts (Fontshare, Uncut, Collletttivo), subset the font files to the character sets the project actually needs. Tools like `glyphhanger` or `pyftsubset` can strip unused glyphs and cut file size significantly. Google Fonts handles this automatically via `unicode-range` splitting — no action needed there.
    - When writing the base font declarations, include `-webkit-text-size-adjust: 100%` on the root element to prevent unexpected text resizing in landscape orientation on iOS.
 
@@ -54,7 +55,7 @@ When a font is static-only, specify explicit weights in the import and `@font-fa
 
 After filtering the font list to what's relevant, present the top 2–4 candidates using `AskUserQuestion`:
 - Each option's **label** = font name or pairing name (e.g. "Bricolage Grotesque + Satoshi")
-- Each option's **description** = short vibe + source + tags (e.g. "Bold geometric sans · Fontshare · heading + body")
+- Each option's **description** = short vibe + source + tags + download note if manual (e.g. "Bold geometric sans · Fontshare · heading + body" or "Calligraphic serif · Uncut · heading · requires manual download")
 - If presenting pairings, describe both the heading and body font in the description
 - Use a single question with header "Font" (or "Pairing" when showing pairs)
 
