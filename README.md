@@ -1,4 +1,4 @@
-# fonts-skill
+# fonts
 
 An opinionated Claude Code skill for picking and setting up typefaces. Surfaces a curated font list, asks about your project context with interactive prompts, and handles the full setup — imports, CSS custom properties, framework config.
 
@@ -8,14 +8,14 @@ Clone directly into your Claude Code skills directory:
 
 ```sh
 mkdir -p ~/.claude/skills
-git clone https://github.com/adeluise/fonts-skill.git ~/.claude/skills/fonts
+git clone https://github.com/adeluise/fonts.git ~/.claude/skills/fonts
 ```
 
 Or, if you already have it cloned elsewhere, symlink it:
 
 ```sh
 mkdir -p ~/.claude/skills
-ln -s /path/to/fonts-skill ~/.claude/skills/fonts
+ln -s /path/to/fonts ~/.claude/skills/fonts
 ```
 
 ## Usage
