@@ -1,73 +1,170 @@
 ---
 name: fonts
-description: "Personal font reference and setup helper. Use when discussing typography, choosing fonts for a project, setting up font imports, or when the user is starting a new project and needs to pick typefaces."
-allowed-tools: Bash(curl *)
+description: "Preview fonts live on the user's own running dev server, then write the ones they choose into their code. Use when the user mentions fonts, typefaces or typography, asks what font to use, says a font looks generic, or wants to restyle a project's font."
+dependencies: node>=18
+allowed-tools: Bash(node *), Read, Write, Edit, Glob, Grep
 ---
 
-# Font Selection & Setup
+# Fonts
 
-You have access to the user's curated font list in `fonts.md` (in this skill's directory). Read it before responding to any font-related question.
+A curated list of 19 Google fonts, a browser picker that applies them to the
+user's actual running app, and the setup code that makes the choice permanent.
+
+The user picks in the browser. You write the code. Nothing else writes files.
+
+## Running the picker
+
+1. **Launch it from the project root, in the background:**
+
+   ```
+   FONTS_SKILL=1 node <this skill's directory>/scripts/preview.mjs
+   ```
+
+   It starts the project's dev script, proxies it, and serves the picker on top,
+   then prints `Font picker → http://localhost:PORT/__fonts/` to stderr. Take the
+   port from that line — it moves if 7373 is taken. `FONTS_SKILL=1` is what tells
+   the picker someone is listening, so its button reads "Apply to code" rather
+   than "Save selection".
+
+2. **Give the user the URL and stop.** One line: open this, pick fonts, hit
+   Apply. Don't narrate what the script is doing — they'll be gone for minutes.
+
+3. **Wait for them, in the background:**
+
+   ```
+   curl -s --max-time 300 http://localhost:PORT/__fonts/wait
+   ```
+
+   That request hangs until something happens, then returns one of three events.
+   `apply` carries the selection. `done` means they closed the picker. `idle` is
+   a heartbeat every 90 seconds so the request never dies of old age — on `idle`,
+   just issue it again. Keep re-issuing until you get `done`.
+
+4. **On `apply`,** read `.fonts-selection.json` and write the setup. Then wait
+   again — applying is a step in the loop, not the end of it. They can keep
+   changing fonts, and each round reloads through HMR showing the fonts coming
+   from their real code rather than the preview.
+
+5. **On `done`,** delete `.fonts-selection.json`. The picker and the dev server
+   have already shut themselves down.
+
+With no dev server the picker still runs — it serves a type specimen in place of
+the app, so fonts can be chosen before a project exists.
+
+## The selection file
+
+```json
+{
+  "header": { "name": "Gloock", "stroke": "SERIF", "variable": false,
+              "wght": null, "weights": [400],
+              "css": "https://fonts.googleapis.com/css2?family=Gloock:wght@400&display=swap",
+              "stack": "\"Gloock\", Charter, \"Bitstream Charter\", Georgia, serif" },
+  "text":   { "name": "Geist", ... },
+  "mono":   { "name": "Geist Mono", ... },
+  "lineHeight": { "text": 1.5 }
+}
+```
+
+`stack` is the finished `font-family` value — use it verbatim rather than
+rebuilding it. `lineHeight.text` is already resolved from the text font's stroke.
+
+## Writing the setup
+
+One fork only: **does this project depend on `next`?** Check `package.json`.
+
+App Router vs Pages Router, Tailwind v3 vs v4 vs none, where the global
+stylesheet lives — read the project. Those change which file you edit, not what
+you write.
+
+### Next.js — `next/font/google`
+
+Self-hosts at build time, so no runtime request to Google and no layout shift.
+
+```tsx
+import { Gloock, Geist, Geist_Mono } from 'next/font/google'
+
+const header = Gloock({ subsets: ['latin'], weight: '400', variable: '--font-header' })
+const text = Geist({ subsets: ['latin'], variable: '--font-text' })
+const mono = Geist_Mono({ subsets: ['latin'], variable: '--font-mono' })
+
+// on <html>:
+className={`${header.variable} ${text.variable} ${mono.variable}`}
+```
+
+Import names are family names with underscores: `Geist_Mono`, `EB_Garamond`,
+`Libre_Franklin`.
+
+### Everything else — stylesheet link
+
+```html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="<the css url from the selection>">
+```
+
+Merge the three `css` URLs into one request — join the `family=` parameters with
+`&`, keep one `&display=swap` at the end.
+
+### Both paths
+
+```css
+html { -webkit-text-size-adjust: 100%; }
+
+body { font-family: var(--font-text), <fallback tail>; line-height: <lineHeight.text>; }
+h1, h2, h3, h4, h5, h6 { font-family: var(--font-header), <fallback tail>; }
+code, pre, kbd, samp { font-family: var(--font-mono), <mono fallback tail>; }
+```
+
+**Only define `:root { --font-header: … }` yourself on the stylesheet path.** On
+Next, `next/font` sets those variables through the class names you put on
+`<html>`, and redefining them in CSS overrides the generated family with a name
+the browser can't resolve. The fallback tail is `stack` with the leading quoted
+family name removed.
+
+With Tailwind, point the theme at the variables so the utilities work — v4 in an
+`@theme` block, v3 under `theme.extend.fontFamily` as arrays like
+`['var(--font-header)', 'system-ui', 'sans-serif']`. **Reuse the project's
+existing key names.** If it already has `font-heading` and `font-body` wired
+through its components, repoint those rather than adding `font-header` and
+`font-text` beside them — otherwise the old utilities keep pointing at the old
+fonts and the page ends up running two type systems at once.
 
 ## Rules
 
-0. **Do not explore or scan the project until the user has chosen a font.** Read only `fonts.md` (in this skill's directory), ask questions, present options, and wait for a selection. Only investigate the project's stack/framework when it's time to do the actual setup.
-1. **Never auto-select fonts.** Always present relevant options from the list and let the user decide. No exceptions.
-2. **Ask about project context first** when invoked directly via `/fonts`. Use `AskUserQuestion` with up to 3 questions in a single call:
-   - **Project type** (header: "Project") — options: "marketing site", "SaaS app", "editorial/blog", "portfolio"
-   - **Vibe** (header: "Vibe") — options: "clean/minimal", "bold/expressive", "editorial/serious", "friendly/warm"
-   - **Hierarchy** (header: "Hierarchy") — options: "heading + body", "heading only", "body only" (no descriptions needed, labels are self-explanatory)
-   The user can always pick "Other" (auto-included) for free-text input.
-3. **Use tags to guide recommendations.** Each font is tagged `heading`, `body`, or `code`. Match recommendations to the hierarchy level the user needs filled. If they need a body font, don't suggest heading-only fonts. Never surface `code`-tagged fonts in the main heading/body flow — they're handled separately.
-5. **Once the user picks a font, just do the setup.** Don't ask for confirmation — detect the project's stack and automatically:
-   - Add the correct import method based on the font's source:
-     - **Google Fonts**: `<link>` tag, CSS `@import`, or `next/font/google` depending on stack
-     - **Fontshare**: CSS `@import` from their CDN, or provide download link for self-hosting
-     - **GitHub-hosted self-hosted fonts** (Download column has a URL in `fonts.md`): Download the `.woff2` files using `curl` from the Download URL + filenames from the file manifest in `fonts.md`. Place them in the project's font directory (e.g., `public/fonts/` or `src/assets/fonts/`). Set up `@font-face` declarations pointing to the downloaded files. If the download fails, fall back to showing the URL column link and asking the user to download manually.
-     - **Manual-download fonts** (Download column = `manual`): Set up `@font-face` declarations with the correct file paths, then prominently tell the user to download the font files from the URL column and place them in the font directory. Do not bury this — make it the first thing the user sees after setup.
-   - Set up CSS custom properties or `font-family` declarations with the correct fallback stack (see below)
-   - Handle framework specifics (e.g., `next/font` for Next.js, global CSS for Vite, Tailwind config, etc.)
-   - For self-hosted fonts (Fontshare, Uncut, Collletttivo), subset the font files to the character sets the project actually needs. Tools like `glyphhanger` or `pyftsubset` can strip unused glyphs and cut file size significantly. Google Fonts handles this automatically via `unicode-range` splitting — no action needed there.
-   - When writing the base font declarations, include `-webkit-text-size-adjust: 100%` on the root element to prevent unexpected text resizing in landscape orientation on iOS.
+1. **Variable fonts get a range, never a weight list.** `wght@100..900` is one
+   file; `wght@400;700` is two static instances and usually more bytes. Check
+   `"variable"` in the selection — 17 of the 19 are.
 
-## Fallback stacks
+2. **Omit `weight` in `next/font` for variable fonts.** Passing explicit weights
+   forces static instances instead of the variable file. Only Gloock (400) and
+   DM Mono (400, 500) take a weight list, from the selection's `weights`.
 
-Always include these fallbacks in `font-family` declarations. No other fallbacks — these are the stacks.
+3. **Use `stack` verbatim.** Fallbacks are chosen per stroke — `system-ui` for
+   sans, `Charter` for serif, `ui-monospace` for mono — and a mismatched fallback
+   shifts the layout while the webfont loads.
 
-- **Sans:** `system-ui, "Helvetica Neue", sans-serif`
-- **Serif:** `Charter, "Bitstream Charter", Georgia, serif`
-- **Mono:** `ui-monospace, "SF Mono", monospace`
+4. **Set `-webkit-text-size-adjust: 100%`.** One line, and without it iOS resizes
+   text on rotation. The bug is invisible until someone turns their phone.
 
-For example, a sans setup should produce: `font-family: "Geist", system-ui, "Helvetica Neue", sans-serif;`
+5. **Serif body copy takes 1.7 line-height, sans takes 1.5.** Already resolved
+   in `lineHeight.text`.
 
-## Variable fonts
+## Answering without the picker
 
-Each font in `fonts.md` has a `Variable` column. Always prefer the variable version when available — don't ask the user, just use it. Variable is strictly better: smaller total payload, one file, more flexibility.
+`fonts.json` carries `note`, `caution`, `class`, `floor` and `avoid_with` for
+every font. Read it and answer directly when someone asks what a face is like or
+what pairs with what. Two fonts sharing a `class` shouldn't be paired;
+`avoid_with` holds the explicit exceptions; `floor` is the size below which a
+face stops working.
 
-When a font is variable:
-- **Google Fonts**: use range syntax in the URL (`wght@100..900`), not individual weights (`wght@400;700`)
-- **Fontshare / self-hosted**: use a single variable `.woff2` file with `font-weight: 100 900` (range) in the `@font-face` block
-- **`next/font`**: omit the `weight` array — `next/font` automatically pulls the variable file when no explicit weights are specified
-- **CSS**: use standard properties (`font-weight`, `font-stretch`) for weight and width axes. Do not use `font-variation-settings` unless the font has a custom axis with no CSS property mapping.
+## Don'ts
 
-When a font is static-only, specify explicit weights in the import and `@font-face` declarations as usual.
-
-## Presentation
-
-After filtering the font list to what's relevant, present the top 2–4 candidates using `AskUserQuestion`:
-- Each option's **label** = font name or pairing name (e.g. "Bricolage Grotesque + Satoshi")
-- Each option's **description** = short vibe + source + tags + download note if manual (e.g. "Bold geometric sans · Fontshare · heading + body" or "Calligraphic serif · Uncut · heading · requires manual download")
-- If presenting pairings, describe both the heading and body font in the description
-- Use a single question with header "Font" (or "Pairing" when showing pairs)
-
-Don't dump the entire list. Filter to what's relevant based on the user's stated needs and context.
-
-## Monospace follow-up
-
-After the user selects their heading/body pairing, if the project type is **SaaS app**, recommend a monospace font. Use `AskUserQuestion` with a single yes/no question:
-- Explain that SaaS apps typically need a monospace font for code blocks, data tables, metric displays, and technical UI
-- Header: "Monospace"
-- Options: "yes, add a monospace" / "no, skip"
-
-If the user says yes, present the `code`-tagged fonts from `fonts.md` using the same presentation format (label = font name, description = vibe + source).
-
-When setting up fonts for SaaS apps, include `font-variant-numeric: tabular-nums` in the CSS for any element that displays numbers in alignment-sensitive contexts — tables, dashboards, metric cards, counters, or timers. This prevents digits from shifting layout as values change. Apply it scoped to those contexts, not globally.
+- Don't add fonts that aren't in `fonts.json`. The list is the opinion — if
+  someone asks for one that isn't on it, say so rather than wiring it up.
+- Don't launch the picker to answer a question. Starting a dev server to say
+  what Lora looks like is absurd; read `fonts.json`.
+- Don't write files before the user has applied a selection. The preview is
+  theirs to change until they commit to it.
+- Don't leave `.fonts-selection.json` behind once the user hits Done.
+- Don't pick for them. If they ask you to choose, offer two or three from
+  `fonts.json` with reasons and let them decide.

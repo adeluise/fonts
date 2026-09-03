@@ -1,0 +1,542 @@
+{
+  "$comment": "Font data for the fonts skill. 'class' is a local enum, not a Google field. Pairing rule: two faces sharing a class value should not be paired. 'avoid_with' lists explicit exceptions and cross-class conflicts. 'roles' controls which picker slot a font appears in. 'note' and 'caution' are retained but unused in v1.",
+  "classes": [
+    "neo-grotesque",
+    "geometric-sans",
+    "quirk-grotesque",
+    "old-style-serif",
+    "transitional-serif",
+    "display-serif",
+    "slab",
+    "mono"
+  ],
+  "roles": [
+    "header",
+    "text",
+    "mono"
+  ],
+  "fonts": [
+    {
+      "name": "Geist",
+      "source": "google",
+      "class": "neo-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Archivo",
+        "Libre Franklin"
+      ],
+      "note": "Neutral to the point of having no opinion, which is what you want under an expressive header.",
+      "caution": "shadcn/ui default. Common in AI-adjacent products.",
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "Archivo",
+      "source": "google",
+      "class": "neo-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght",
+        "wdth"
+      ],
+      "wdth": [
+        62,
+        125
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Geist",
+        "Libre Franklin"
+      ],
+      "note": "Width axis means it can produce its own display cut. One family, both jobs.",
+      "caution": null,
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "Libre Franklin",
+      "source": "google",
+      "class": "neo-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Geist",
+        "Archivo"
+      ],
+      "note": "Franklin Gothic redrawn for screen. Older bones, wants 1.65 line-height minimum.",
+      "caution": null,
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "DM Sans",
+      "source": "google",
+      "class": "geometric-sans",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght",
+        "opsz"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Figtree",
+        "Sora"
+      ],
+      "note": "Low contrast, slightly geometric. Sits well under a high-contrast serif. Pairs natively with DM Mono.",
+      "caution": "On shadcn/ui's font list.",
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "Sora",
+      "source": "google",
+      "class": "geometric-sans",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "DM Sans",
+        "Figtree"
+      ],
+      "note": "Wide with irregular details. Fine under 300 words, tiring past that. Check line length.",
+      "caution": null,
+      "wght": [
+        100,
+        800
+      ]
+    },
+    {
+      "name": "Figtree",
+      "source": "google",
+      "class": "geometric-sans",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "DM Sans",
+        "Sora"
+      ],
+      "note": "Warm, round, uncontroversial.",
+      "caution": "On shadcn/ui's font list. Reads as a default. Candidate for removal.",
+      "wght": [
+        300,
+        900
+      ]
+    },
+    {
+      "name": "Epilogue",
+      "source": "google",
+      "class": "quirk-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Bricolage Grotesque"
+      ],
+      "note": "Tight apertures, true italic. Add 0.01em tracking at 13px or it closes up.",
+      "caution": null,
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "Bricolage Grotesque",
+      "source": "google",
+      "class": "quirk-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": [
+        12,
+        96
+      ],
+      "axes": [
+        "wght",
+        "opsz",
+        "wdth",
+        "GRAD"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Epilogue",
+        "Anybody",
+        "Darker Grotesque"
+      ],
+      "note": "Optical size axis lets it carry a whole system alone. No second family needed.",
+      "caution": null,
+      "wght": [
+        200,
+        800
+      ]
+    },
+    {
+      "name": "Anybody",
+      "source": "google",
+      "class": "quirk-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header"
+      ],
+      "floor": 24,
+      "opsz": null,
+      "axes": [
+        "wght",
+        "wdth"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Darker Grotesque",
+        "Bricolage Grotesque",
+        "Gloock"
+      ],
+      "note": "From a poster face. The width axis is the point, and width axes are wasted small.",
+      "caution": "Display only.",
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "Darker Grotesque",
+      "source": "google",
+      "class": "quirk-grotesque",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "header"
+      ],
+      "floor": 30,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Anybody",
+        "Bricolage Grotesque",
+        "Gloock"
+      ],
+      "note": "Narrow, tall, tight. A paragraph turns into a picket fence.",
+      "caution": "Display only.",
+      "wght": [
+        300,
+        900
+      ]
+    },
+    {
+      "name": "EB Garamond",
+      "source": "google",
+      "class": "old-style-serif",
+      "stroke": "SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Lora",
+        "Newsreader"
+      ],
+      "note": "Small x-height. Size up 2px against a sans to match apparent size. Tolerates long lines.",
+      "caution": null,
+      "wght": [
+        400,
+        800
+      ]
+    },
+    {
+      "name": "Lora",
+      "source": "google",
+      "class": "old-style-serif",
+      "stroke": "SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": 14,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "EB Garamond",
+        "Newsreader"
+      ],
+      "note": "Brushed contrast, sturdy serifs. Holds 14px better than any other serif here.",
+      "caution": "Very widely used.",
+      "wght": [
+        400,
+        700
+      ]
+    },
+    {
+      "name": "Newsreader",
+      "source": "google",
+      "class": "old-style-serif",
+      "stroke": "SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": [
+        6,
+        72
+      ],
+      "axes": [
+        "wght",
+        "opsz",
+        "ital"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Lora",
+        "EB Garamond"
+      ],
+      "note": "Built for screen reading. True italic. The safest serif in the list.",
+      "caution": null,
+      "wght": [
+        200,
+        800
+      ]
+    },
+    {
+      "name": "Ibarra Real Nova",
+      "source": "google",
+      "class": "transitional-serif",
+      "stroke": "SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": 15,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Gloock"
+      ],
+      "note": "From a Spanish specimen of the 1780s. Higher contrast than a normal text serif.",
+      "caution": null,
+      "wght": [
+        400,
+        700
+      ]
+    },
+    {
+      "name": "Fraunces",
+      "source": "google",
+      "class": "display-serif",
+      "stroke": "SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": [
+        9,
+        144
+      ],
+      "axes": [
+        "wght",
+        "opsz",
+        "WONK",
+        "SOFT",
+        "ital"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Gloock"
+      ],
+      "note": "WONK on above 40px only. Off and opsz low, it reads as a plain book serif.",
+      "caution": null,
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "Gloock",
+      "source": "google",
+      "class": "display-serif",
+      "stroke": "SERIF",
+      "roles": [
+        "header"
+      ],
+      "floor": 32,
+      "opsz": null,
+      "axes": [],
+      "weights": [
+        400
+      ],
+      "avoid_with": [
+        "Fraunces",
+        "Anybody",
+        "Darker Grotesque",
+        "Ibarra Real Nova"
+      ],
+      "note": "One weight, very high contrast. Below the floor the hairlines drop out entirely.",
+      "caution": "Display only.",
+      "wght": null
+    },
+    {
+      "name": "Geist Mono",
+      "source": "google",
+      "class": "mono",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "mono"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "DM Mono",
+        "Martian Mono"
+      ],
+      "note": "The utility mono. Wide for its size, so two columns will exhaust horizontal space fast.",
+      "caution": "shadcn/ui default mono.",
+      "wght": [
+        100,
+        900
+      ]
+    },
+    {
+      "name": "DM Mono",
+      "source": "google",
+      "class": "mono",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "mono"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [],
+      "weights": [
+        400,
+        500
+      ],
+      "avoid_with": [
+        "Geist Mono",
+        "Martian Mono"
+      ],
+      "note": "Narrower than Geist Mono, which matters in a split view. Pairs natively with DM Sans.",
+      "caution": null,
+      "wght": null
+    },
+    {
+      "name": "Martian Mono",
+      "source": "google",
+      "class": "mono",
+      "stroke": "SANS_SERIF",
+      "roles": [
+        "mono"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght",
+        "wdth"
+      ],
+      "weights": null,
+      "avoid_with": [
+        "Geist Mono",
+        "DM Mono"
+      ],
+      "note": "Width axis, no other free mono has one. Too wide for code — a line runs off the edge.",
+      "caution": "Labels only, never code blocks.",
+      "wght": [
+        100,
+        800
+      ]
+    }
+  ],
+  "rules": [
+    "Two fonts sharing a class value should not be paired.",
+    "Get contrast from class or width, not weight.",
+    "Check for an opsz axis before adding a second family.",
+    "x-height decides apparent size, not font-size.",
+    "Serif body 1.7 line-height, sans 1.5.",
+    "Lines under 80 characters.",
+    "Large type gets negative tracking, capitals get positive.",
+    "One face with a floor per page.",
+    "Load only the weights you use."
+  ]
+}
