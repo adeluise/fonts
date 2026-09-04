@@ -1,5 +1,5 @@
 {
-  "$comment": "Font data for the fonts skill. 'class' is a local enum, not a Google field. Pairing rule: two faces sharing a class value should not be paired. 'avoid_with' lists explicit exceptions and cross-class conflicts. 'roles' controls which picker slot a font appears in. 'note' and 'caution' are retained but unused in v1.",
+  "$comment": "Font data for the fonts skill. 'class' is a local enum, not a Google field. Pairing rule: two faces sharing a class value should not be paired. 'avoid_with' lists explicit exceptions and cross-class conflicts. 'roles' controls which picker slot a font appears in; the mono slot is optional. 'wght' is the variable weight range [min, max], null for static faces, which list their instances in 'weights' instead. 'wdth' is the variable width range [min, max] and is present only on faces carrying a wdth axis. 'note' and 'caution' are retained but unused in v1.",
   "classes": [
     "neo-grotesque",
     "geometric-sans",
@@ -223,6 +223,10 @@
         "wdth",
         "GRAD"
       ],
+      "wdth": [
+        75,
+        100
+      ],
       "weights": null,
       "avoid_with": [
         "Epilogue",
@@ -249,6 +253,10 @@
       "axes": [
         "wght",
         "wdth"
+      ],
+      "wdth": [
+        50,
+        150
       ],
       "weights": null,
       "avoid_with": [
@@ -514,6 +522,10 @@
       "axes": [
         "wght",
         "wdth"
+      ],
+      "wdth": [
+        75,
+        112.5
       ],
       "weights": null,
       "avoid_with": [

@@ -11,100 +11,212 @@
   :root {
     --ink: #171717;
     --ink-hover: #262626;
-    --muted: #737373;
-    --label: #A3A3A3;
+    /* Both resolve to the same value: the split is semantic, not visual.
+       #666 clears 4.5:1 on #fff (5.7) and on the #F5F5F5 pills (5.3). */
+    --muted: #666666;
+    --label: #666666;
     --line: #E5E5E5;
     --fill: #F5F5F5;
     --radius: 8px;
     --shadow: 0 1px 2px rgba(0,0,0,.05), 0 14px 36px rgba(0,0,0,.13);
     --ui: "DM Sans", system-ui, sans-serif;
     --mono: "Geist Mono", ui-monospace, monospace;
+    /* Entrances and exits; the drawer curve is only for the panel. */
+    --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+    --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
   }
   * { box-sizing: border-box; }
   html, body { height: 100%; margin: 0; background: #fff; }
-  #app { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; display: block; }
+  /* The containing block for the panel while it is riding over the app. */
+  body { position: relative; }
+  /* A face without a weight is a face the applied code can't reproduce either. */
+  body { display: flex; font-synthesis: none; -webkit-font-smoothing: antialiased; }
+  #app { flex: 1 1 auto; min-width: 0; height: 100%; border: 0; display: block; }
 
-  #dock {
-    position: fixed; left: 0; right: 0; bottom: 40px;
-    display: flex; justify-content: center; pointer-events: none;
-  }
-  #bar {
-    pointer-events: auto;
-    display: flex; align-items: center; gap: 6px;
-    padding: 8px 8px 8px 10px;
-    border-radius: 16px; background: #fff; border: 1px solid var(--line);
-    box-shadow: var(--shadow);
+  /* --- panel --- */
+
+  #panel {
+    display: flex; flex-direction: column; flex-shrink: 0;
+    width: 336px; height: 100%;
+    background: #fff; border-left: 1px solid var(--line);
     font-family: var(--ui);
+    transition: transform 400ms var(--ease-drawer);
   }
-  .rule { width: 1px; height: 24px; flex-shrink: 0; background: var(--line); }
+  /* For the length of the move the panel is a surface over the app, not a
+     column beside it: the iframe reflows to its new width underneath, where the
+     panel hides it, and no width is ever interpolated. */
+  body.panel-float #panel {
+    position: absolute; top: 0; right: 0; bottom: 0; height: auto;
+    overflow: hidden; box-shadow: -8px 0 24px rgba(23,20,15,.08);
+  }
+  body.panel-out #panel { transform: translateX(100%); }
+  body.collapsed #panel { display: none; }
+
+  #head {
+    display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    height: 60px; padding: 0 12px 0 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  #head .title {
+    flex-grow: 1; font-size: 14px; font-weight: 600;
+    color: var(--ink); letter-spacing: -.01em; line-height: 18px;
+  }
   .history { display: flex; align-items: center; gap: 2px; }
+  .rule { width: 1px; height: 20px; flex-shrink: 0; background: var(--line); margin: 0 2px; }
 
   .icon-btn {
     display: flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; flex-shrink: 0;
     border: 0; border-radius: var(--radius); background: transparent;
     color: var(--ink); cursor: pointer; padding: 0;
+    transition: transform 160ms var(--ease-out);
   }
-  .icon-btn:hover:not(:disabled) { background: var(--fill); }
+  .icon-btn:not(:disabled):active { transform: scale(0.97); }
   .icon-btn:disabled { color: #D4D4D4; cursor: default; }
+  /* A disabled button dispatches no mouse events, so the tooltip's hover target
+     has to be something around it. */
+  .tip-wrap { display: flex; min-width: 0; }
+  /* The divider reads as the panel edge, so it has to sit on the panel's side. */
+  #collapse svg { transform: scaleX(-1); }
 
-  .selects { display: flex; align-items: center; gap: 4px; }
-  .select {
-    display: flex; align-items: center; gap: 10px;
-    padding: 6px 12px 7px; border: 0; border-radius: var(--radius);
-    background: transparent; cursor: pointer; text-align: left;
-    font-family: var(--ui);
+  #body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
+  #body::-webkit-scrollbar { width: 10px; }
+  #body::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 3.5px solid #fff; }
+
+  .section { display: flex; flex-direction: column; gap: 8px; padding: 0 20px; }
+  .section:first-child { padding-top: 24px; }
+  .section + .section { padding-top: 36px; }
+  .sec-head { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
+  .sec-title {
+    flex-grow: 1; font-size: 12px; font-weight: 600; color: var(--ink);
+    letter-spacing: 0; line-height: 14px;
   }
-  .select:hover, .select[aria-expanded="true"] { background: var(--fill); }
-  .select[data-role="header"], .select[data-role="text"] { width: 183px; }
-  .select[data-role="mono"] { width: 168px; }
-  .select .col { display: flex; flex-direction: column; gap: 1px; flex-grow: 1; min-width: 0; }
-  .select .label {
-    font-size: 10px; font-weight: 600; color: var(--label);
-    letter-spacing: .1em; text-transform: uppercase; line-height: 12px;
+  .lane { display: flex; align-items: center; gap: 12px; width: 100%; }
+  .lane-label {
+    width: 64px; flex-shrink: 0;
+    font-size: 12px; font-weight: 500; color: var(--label);
+    letter-spacing: 0; line-height: 14px;
   }
-  .select .value {
-    font-size: 14px; font-weight: 500; color: var(--ink);
-    letter-spacing: -.012em; line-height: 18px;
+  /* Font and axis pills are the same object at three scopes, so they are the
+     same size — a taller header pill read as an inconsistency, not a hierarchy. */
+  .pill {
+    display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 0;
+    height: 40px; padding: 0 12px;
+    border: 0; border-radius: 10px; background: var(--fill);
+    cursor: pointer; text-align: left; font-family: var(--ui);
+  }
+  /* No press state on the pills or the rows: they open something, and the menu
+     arriving is the feedback. */
+  .pill[aria-expanded="true"] { background: #EDEDED; }
+  .pill .value {
+    flex-grow: 1; min-width: 0; color: var(--ink);
+    font-family: var(--ui); font-size: 14px; font-weight: 500;
+    line-height: 20px; letter-spacing: -.006em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
-  .select .caret { flex-shrink: 0; color: var(--muted); }
+  .value.unset { color: var(--muted); font-weight: 400; }
+  .caret { flex-shrink: 0; color: var(--muted); }
 
+  .spacer { flex-grow: 1; min-height: 20px; }
+
+  /* The pairing copy rewrites itself in response to a pick made elsewhere, so it
+     crossfades rather than cutting under the user's hands. */
+  #pairing {
+    display: flex; flex-direction: column; gap: 8px; padding: 0 20px 20px;
+    transition: filter 220ms var(--ease-out), opacity 220ms var(--ease-out);
+  }
+  #pairing[data-swapping] {
+    filter: blur(2px); opacity: 0;
+    transition: filter 120ms ease, opacity 120ms ease;
+  }
+  .pair-label {
+    font-size: 12px; font-weight: 500; color: var(--label);
+    letter-spacing: 0; line-height: 14px;
+  }
+  .pair-line { font-size: 14px; font-weight: 500; color: var(--ink); letter-spacing: -.006em; line-height: 20px; }
+  .pair-note { font-size: 13px; color: var(--muted); line-height: 18px; }
+
+  #footer {
+    display: flex; flex-shrink: 0; padding: 14px 20px 20px;
+    border-top: 1px solid var(--line);
+  }
+  #footer .tip-wrap { flex-grow: 1; }
   #apply {
     display: flex; align-items: center; justify-content: center;
-    width: 137px; height: 40px; flex-shrink: 0;
+    flex-grow: 1; height: 40px;
     border: 0; border-radius: var(--radius); background: var(--ink); color: #fff;
     font-family: var(--ui); font-size: 14px; font-weight: 500; letter-spacing: -.006em;
     cursor: pointer;
+    /* Wider than the other buttons, so the same press reads heavier on it. */
+    transition: transform 160ms var(--ease-out);
   }
-  #apply:hover:not(:disabled) { background: var(--ink-hover); }
+  #apply:not(:disabled):active { transform: scale(0.98); }
   #apply:disabled { opacity: .55; cursor: default; }
+  /* Only the label changes between states, so only the label crossfades. */
+  #apply .label { transition: filter 200ms ease, opacity 200ms ease; }
+  #apply .label[data-swapping] { filter: blur(2px); opacity: .7; }
 
-  .menu {
+  /* --- collapsed trigger --- */
+
+  #trigger {
+    position: fixed; bottom: 16px; right: 16px; z-index: 8;
+    display: none; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0;
+    border: 1px solid var(--line); border-radius: 10px;
+    background: #fff; color: var(--ink); box-shadow: var(--shadow); cursor: pointer;
+    opacity: 0; scale: .95;
+    /* The entrance rides `scale` so `transform` stays free for the press. */
+    transition: opacity 200ms var(--ease-out), scale 200ms var(--ease-out),
+                transform 160ms var(--ease-out);
+  }
+  body.collapsed #trigger { display: flex; }
+  #trigger[data-in="true"] { opacity: 1; scale: 1; }
+  #trigger:active { transform: scale(0.97); }
+  #trigger[data-instant] { transition-duration: 0ms; }
+
+  /* --- menus --- */
+
+  #menu {
     position: fixed; z-index: 10;
     display: none; flex-direction: column;
-    width: 340px; max-height: 420px; overflow-y: auto;
-    padding: 6px; border-radius: 16px; background: #fff;
+    width: 260px; overflow-y: auto;
+    padding: 4px; border-radius: 12px; background: #fff;
     border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 18px 44px rgba(0,0,0,.14);
     font-family: var(--ui);
+    /* Opens from the pill that owns it; the origin is set from the anchor. */
+    opacity: 0; transform: scale(0.95); transform-origin: 100% 0;
+    transition: opacity 200ms var(--ease-out), transform 200ms var(--ease-out);
   }
-  .menu[data-open="true"] { display: flex; }
-  .menu::-webkit-scrollbar { width: 10px; }
-  .menu::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 3.5px solid #fff; }
+  #menu[data-open="true"] { display: flex; }
+  #menu[data-open="true"][data-shown="true"] { opacity: 1; transform: scale(1); }
+  /* Keyboard opens don't animate. */
+  #menu[data-instant] { transition-duration: 0ms; }
+  #menu::-webkit-scrollbar { width: 10px; }
+  #menu::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 3.5px solid #fff; }
+  .sep { flex-shrink: 0; height: 1px; background: var(--line); margin: 4px 10px; }
   .group {
-    padding: 14px 12px 6px; font-size: 10px; font-weight: 600;
-    color: var(--label); letter-spacing: .11em; text-transform: uppercase;
+    padding: 8px 10px 4px; font-size: 11px; font-weight: 600;
+    color: var(--label); letter-spacing: 0;
   }
   .row {
-    display: flex; align-items: center; gap: 10px; width: 100%;
-    padding: 10px 12px; border: 0; border-radius: 10px; background: transparent;
+    display: flex; align-items: center; gap: 8px; width: 100%; flex-shrink: 0;
+    height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
     cursor: pointer; text-align: left; color: var(--ink);
   }
-  .row:hover, .row[data-active="true"] { background: var(--fill); }
+  .row[data-active="true"] { background: var(--fill); }
   .row .check { display: flex; align-items: center; justify-content: center; width: 16px; flex-shrink: 0; }
-  .row .name { flex-grow: 1; font-size: 17px; font-weight: 500; letter-spacing: -.01em; line-height: 24px; }
-  .row[data-stroke="SERIF"] .name { font-size: 18px; letter-spacing: -.005em; }
-  .row[data-class="mono"] .name { font-size: 15px; letter-spacing: -.01em; }
+  .row .name {
+    flex-grow: 1; min-width: 0; font-family: var(--ui); font-size: 14px; font-weight: 400;
+    color: var(--ink); letter-spacing: -.006em; line-height: 20px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .row .name.muted { color: var(--muted); }
+  .row .tag {
+    flex-shrink: 0; font-family: var(--ui);
+    font-size: 12px; line-height: 12px; color: var(--muted); text-align: right;
+  }
+
+  /* --- tooltip --- */
 
   #tip {
     position: fixed; z-index: 20; display: none; align-items: center; gap: 8px;
@@ -112,13 +224,21 @@
     background: var(--ink); color: #FAFAFA;
     font-family: var(--ui); font-size: 12px; font-weight: 500; line-height: 16px;
     letter-spacing: -.002em; pointer-events: none; white-space: nowrap;
+    /* Grows out of the arrow, wherever the arrow ended up. */
+    opacity: 0; transform: scale(0.97); transform-origin: var(--arrow-x, 50%) 100%;
+    transition: opacity 125ms var(--ease-out), transform 125ms var(--ease-out);
   }
   #tip[data-open="true"] { display: flex; }
+  #tip[data-open="true"][data-shown="true"] { opacity: 1; transform: scale(1); }
+  #tip[data-below="true"] { transform-origin: var(--arrow-x, 50%) 0; }
+  /* A second tooltip inside the chain window opens with no delay and no motion. */
+  #tip[data-instant] { transition-duration: 0ms; }
   #tip::after {
-    content: ''; position: absolute; bottom: -4px; left: 50%; margin-left: -4px;
+    content: ''; position: absolute; bottom: -4px; left: var(--arrow-x, 50%); margin-left: -4px;
     width: 8px; height: 8px; background: var(--ink); transform: rotate(45deg);
     border-radius: 1px;
   }
+  #tip[data-below="true"]::after { bottom: auto; top: -4px; }
   #tip .kbd {
     display: flex; align-items: center; justify-content: center;
     height: 18px; min-width: 18px; padding: 0 5px; flex-shrink: 0;
@@ -126,31 +246,68 @@
     border: 1px solid rgba(255,255,255,.18);
     font-family: var(--mono); font-size: 10.5px; color: rgba(255,255,255,.72);
   }
+
+  /* --- motion gates --- */
+
+  /* A hover state on a touch device is a state that sticks after the tap. */
+  @media (hover: hover) and (pointer: fine) {
+    .icon-btn:hover:not(:disabled) { background: var(--fill); }
+    .pill:hover { background: #EDEDED; }
+    .row:hover { background: var(--fill); }
+    #apply:hover:not(:disabled) { background: var(--ink-hover); }
+  }
+
+  /* Crossfades stay — including the two blurs, which aren't vestibular — and
+     every transform-driven motion goes. The panel toggle takes the instant path
+     in JS as well, since a 0ms transition fires no transitionend for the iframe
+     snap to hang off. */
+  @media (prefers-reduced-motion: reduce) {
+    #panel { transition: none; }
+    #trigger { scale: 1; transition: opacity 200ms var(--ease-out); }
+    #menu, #menu[data-open="true"][data-shown="true"] { transform: none; }
+    #menu { transition: opacity 200ms var(--ease-out); }
+    #tip, #tip[data-open="true"][data-shown="true"] { transform: none; }
+    #tip { transition: opacity 125ms var(--ease-out); }
+    .icon-btn, #apply { transition: none; }
+    .icon-btn:not(:disabled):active, #trigger:active,
+    #apply:not(:disabled):active { transform: none; }
+  }
 </style>
 </head>
 <body>
 <iframe id="app" src="/" title="Your app"></iframe>
 
-<div id="dock">
-  <div id="bar">
+<aside id="panel">
+  <div id="head">
+    <div class="title">Fonts</div>
     <div class="history">
-      <button class="icon-btn" id="undo" disabled>
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-      </button>
-      <button class="icon-btn" id="redo" disabled>
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
-      </button>
+      <span class="tip-wrap">
+        <button class="icon-btn" id="undo" disabled>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+        </button>
+      </span>
+      <span class="tip-wrap">
+        <button class="icon-btn" id="redo" disabled>
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </button>
+      </span>
     </div>
     <div class="rule"></div>
-    <div class="selects" id="selects"></div>
-    <div class="rule"></div>
-    <button id="apply">Apply to code</button>
-    <button class="icon-btn" id="done">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+    <button class="icon-btn" id="collapse">
+      <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/></svg>
     </button>
   </div>
-</div>
+  <div id="body"></div>
+  <div id="footer">
+    <span class="tip-wrap"><button id="apply"><span class="label">Apply to code</span></button></span>
+  </div>
+</aside>
 
+<button id="trigger">
+  <svg width="18" height="18" viewBox="0 0 256 256" fill="currentColor"><path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40ZM40,56H80V200H40ZM216,200H96V56H216V200Z"/></svg>
+</button>
+
+<div id="menu" data-open="false"></div>
 <div id="tip"></div>
 
 <script type="module">
@@ -166,6 +323,21 @@ const FALLBACK = {
 }
 const MONO_FALLBACK = 'ui-monospace, "SF Mono", monospace'
 const GROUPS = ['Sans', 'Serif', 'Mono']
+const UNSET = 'From your code'
+// Mono is the one role a page may not have at all, so its unset state is an
+// invitation rather than a statement about the page.
+const NO_MONO = { pill: 'Add', row: 'None' }
+const MENU_W = 260
+
+const WEIGHTS = [
+  [100, 'Thin'], [200, 'Extra Light'], [300, 'Light'], [400, 'Regular'], [500, 'Medium'],
+  [600, 'Semibold'], [700, 'Bold'], [800, 'Extra Bold'], [900, 'Black'],
+]
+const WIDTHS = [
+  [50, 'Ultra Condensed'], [62.5, 'Extra Condensed'], [75, 'Condensed'], [87.5, 'Semi Condensed'],
+  [100, 'Normal'], [112.5, 'Semi Expanded'], [125, 'Expanded'], [150, 'Extra Expanded'],
+  [200, 'Ultra Expanded'],
+]
 
 const data = await fetch(`${PREFIX}/fonts.json`).then((r) => r.json())
 const session = await fetch(`${PREFIX}/session`).then((r) => r.json()).catch(() => ({ watched: false }))
@@ -182,55 +354,127 @@ const listFor = (role) =>
         GROUPS.indexOf(groupOf(a)) - GROUPS.indexOf(groupOf(b)) || a.name.localeCompare(b.name),
     )
 
+// --- axes -------------------------------------------------------------------
+
+const WDTH_FALLBACK = [75, 125]
+const wdthRange = (f) => (f.axes.includes('wdth') ? f.wdth ?? WDTH_FALLBACK : null)
+const declaredWdth = (f) => (f.axes.includes('wdth') ? f.wdth ?? null : null)
+
+const weightOptions = (f) =>
+  f.wght
+    ? WEIGHTS.filter(([v]) => v >= f.wght[0] && v <= f.wght[1])
+    : WEIGHTS.filter(([v]) => f.weights?.includes(v))
+
+function widthOptions(f) {
+  const range = wdthRange(f)
+  return range ? WIDTHS.filter(([v]) => v >= range[0] && v <= range[1]) : []
+}
+
+const optionsFor = (f, axis) => (axis === 'weight' ? weightOptions(f) : widthOptions(f))
+const nameOf = (axis, v) => (axis === 'weight' ? WEIGHTS : WIDTHS).find(([w]) => w === v)?.[1] ?? ''
+
 // --- font loading -----------------------------------------------------------
 
-// Google rejects weights a family doesn't ship, so ranges come from the data.
-const weightParam = (f, full) => {
-  if (f.wght) return full ? `:wght@${f.wght[0]}..${f.wght[1]}` : ':wght@400;500'
-  if (f.weights?.length) return `:wght@${f.weights.join(';')}`
-  return ''
+// Google rejects weights and widths a family doesn't ship, so ranges come from
+// the data. Axis tags have to be alphabetical: wdth before wght.
+function familyParam(f, wdth) {
+  const name = f.name.replace(/ /g, '+')
+  const wght = f.wght ? `${f.wght[0]}..${f.wght[1]}` : f.weights?.join(';')
+  if (wdth) return `family=${name}:wdth,wght@${wdth[0]}..${wdth[1]},${wght ?? '400'}`
+  return wght ? `family=${name}:wght@${wght}` : `family=${name}`
 }
-const cssUrl = (fonts, full) =>
-  'https://fonts.googleapis.com/css2?' +
-  fonts.map((f) => `family=${f.name.replace(/ /g, '+')}${weightParam(f, full)}`).join('&') +
-  '&display=swap'
+
+const sheet = (fonts, range) =>
+  'https://fonts.googleapis.com/css2?' + fonts.map((f) => familyParam(f, range(f))).join('&') + '&display=swap'
+
+const cssUrl = (fonts) => sheet(fonts, wdthRange)
+
+// A wdth range Google doesn't ship rejects the whole request, so a family whose
+// range is only guessed rides in a second sheet — its loss can't cost the rest.
+// Once every wdth font declares its range this collapses back to one sheet.
+const GUESSED = data.fonts.filter((f) => f.axes.includes('wdth') && !f.wdth)
+const SHEETS = [sheet(data.fonts, declaredWdth), ...(GUESSED.length ? [cssUrl(GUESSED)] : [])]
 
 // Keyed per document, not per frame: a navigation or full HMR reload replaces
 // the framed document, and a flat cache would skip re-injecting the font link
 // into the new one — leaving the page silently on system fonts.
 const loadedByDoc = new WeakMap()
-function loadInto(doc, font) {
-  let seen = loadedByDoc.get(doc)
-  if (!seen) loadedByDoc.set(doc, (seen = new Set()))
-  if (seen.has(font.name)) return
-  seen.add(font.name)
-  const link = doc.createElement('link')
-  link.rel = 'stylesheet'
-  link.href = cssUrl([font], true)
-  doc.head.appendChild(link)
+
+// Resolves once the stylesheets are parsed. Until then the document knows no
+// faces and doc.fonts.load() for one resolves instantly against nothing.
+function loadInto(doc) {
+  let ready = loadedByDoc.get(doc)
+  if (ready) return ready
+  ready = Promise.all(
+    SHEETS.map(
+      (href) =>
+        new Promise((resolve) => {
+          const link = doc.createElement('link')
+          link.rel = 'stylesheet'
+          link.href = href
+          link.addEventListener('load', resolve, { once: true })
+          link.addEventListener('error', resolve, { once: true })
+          doc.head.appendChild(link)
+        }),
+    ),
+  )
+  loadedByDoc.set(doc, ready)
+  ready.then(() => warm(doc))
+  return ready
 }
 
-document.head.insertAdjacentHTML(
-  'beforeend',
-  `<link rel="stylesheet" href="${cssUrl(data.fonts, false)}">`,
-)
+// Pull the files down while the user is still reading the menu, so the first
+// selection is a swap and not a download. Idle so it yields to the app's load.
+function warm(doc) {
+  const run = () => {
+    try {
+      for (const f of data.fonts) doc.fonts.load(`400 1em "${f.name}"`).catch(() => {})
+    } catch {}
+  }
+  if (typeof requestIdleCallback === 'function') requestIdleCallback(run, { timeout: 2000 })
+  else setTimeout(run, 0)
+}
+
+for (const href of SHEETS) {
+  document.head.insertAdjacentHTML('beforeend', `<link rel="stylesheet" href="${href}">`)
+}
 
 // --- state ------------------------------------------------------------------
 
-const pick = (role, want) => {
-  const list = listFor(role)
-  return (list.find((f) => f.name === want) ?? list[0]).name
-}
-let selection = { header: pick('header', 'Geist'), text: pick('text', 'Geist'), mono: pick('mono', 'Geist Mono') }
+const blank = () => ({ font: null, weight: null, width: null })
+
+// Nothing is chosen on open: the app keeps its own type until the user picks.
+let selection = { header: blank(), text: blank(), mono: blank() }
+let detected = noDetection()
+// Roles the preview holds in place so a base weight can't leak into them.
+let pins = {}
+let hasCode = false
 const past = []
 const future = []
 
+const clone = (s) => Object.fromEntries(Object.entries(s).map(([k, v]) => [k, { ...v }]))
+const picked = (role) => selection[role]?.font ?? null
+const anyPicked = () => ROLES.some((r) => picked(r.id))
+
 function commit(next) {
-  past.push({ ...selection })
+  past.push(clone(selection))
   future.length = 0
   selection = next
   render()
 }
+
+function setFont(role, name) {
+  if (!name) return commit({ ...clone(selection), [role]: blank() })
+  const cur = selection[role]
+  const allowed = weightOptions(byName.get(name)).map(([v]) => v)
+  // Width is family-specific in a way weight isn't — 100 means the same thing
+  // in every family, "Semi Expanded" doesn't.
+  const weight = cur.weight != null && allowed.includes(cur.weight) ? cur.weight : null
+  commit({ ...clone(selection), [role]: { font: name, weight, width: null } })
+}
+
+const setAxis = (role, axis, v) =>
+  commit({ ...clone(selection), [role]: { ...selection[role], [axis]: v } })
 
 // --- preview ----------------------------------------------------------------
 
@@ -243,123 +487,406 @@ function stack(name) {
   return `"${name}", ${f.class === 'mono' ? MONO_FALLBACK : FALLBACK[f.stroke]}`
 }
 
-function applyPreview() {
+// Elements whose computed weight tells us which faces the swap will actually
+// paint — waiting on the whole variable range would stall on files nobody sees.
+const PROBES = { header: 'h1,h2,h3,h4,h5,h6', text: 'body,p,li', mono: 'code,pre' }
+
+// What the family rules overwrite, and at what specificity. The base weight and
+// width go on the narrow selectors only — the same ones Apply writes.
+const FAMILY_SEL = {
+  header: 'h1, h2, h3, h4, h5, h6',
+  text:
+    'body, p, li, td, th, input, textarea, select, button, blockquote, figcaption,\n    label, span, div, a',
+  mono: 'code, pre, kbd, samp, tt',
+}
+const BASE_SEL = {
+  header: 'h1, h2, h3, h4, h5, h6',
+  text: 'body',
+  mono: 'code, pre, kbd, samp, tt',
+}
+const AXIS_CSS = { weight: 'font-weight', width: 'font-stretch' }
+const axisDecl = (axis, v) => `${AXIS_CSS[axis]}: ${axis === 'width' ? `${v}%` : v};`
+
+function faceLoads(doc, sel) {
+  const view = doc.defaultView
+  const loads = []
+  for (const [role, probe] of Object.entries(PROBES)) {
+    const name = sel[role]?.font
+    if (!name) continue
+    const weights = new Set(['400'])
+    if (sel[role].weight) weights.add(String(sel[role].weight))
+    for (const el of [...doc.querySelectorAll(probe)].slice(0, 24)) {
+      weights.add(view.getComputedStyle(el).fontWeight)
+    }
+    for (const w of weights) loads.push(doc.fonts.load(`${w} 1em "${name}"`))
+  }
+  return Promise.allSettled(loads)
+}
+
+function previewCss(sel, pin) {
+  const rules = ['html { -webkit-text-size-adjust: 100%; }']
+  for (const role of ['text', 'header', 'mono']) {
+    const s = sel[role]
+    if (!s?.font) continue
+    // A static face ships no bold or italic, so the preview would otherwise show
+    // a synthesized one the applied code can't reproduce.
+    const synth = byName.get(s.font).axes.length ? '' : ' font-synthesis: none;'
+    rules.push(`${FAMILY_SEL[role]} { font-family: ${stack(s.font)} !important;${synth} }`)
+    const base = [
+      s.weight != null ? axisDecl('weight', s.weight) : '',
+      s.width != null ? axisDecl('width', s.width) : '',
+    ].filter(Boolean)
+    if (base.length) rules.push(`${BASE_SEL[role]} { ${base.join(' ')} }`)
+  }
+  for (const [role, p] of Object.entries(pin)) {
+    const held = AXES.filter((a) => p[a] != null).map((a) => axisDecl(a, p[a]))
+    rules.push(`${BASE_SEL[role]} { ${held.join(' ')} }`)
+  }
+  if (sel.text?.font) {
+    rules.push(`p, li { line-height: ${byName.get(sel.text.font).stroke === 'SERIF' ? 1.7 : 1.5}; }`)
+  }
+  return rules.join('\n    ')
+}
+
+let applyToken = 0
+
+async function applyPreview() {
   const doc = frame.contentDocument
-  if (!doc?.head) return
+  if (!doc?.head) {
+    pins = {}
+    return
+  }
+  const sel = selection
+  const ready = loadInto(doc)
 
-  for (const role of ['header', 'text', 'mono']) loadInto(doc, byName.get(selection[role]))
-  const leading = byName.get(selection.text).stroke === 'SERIF' ? 1.7 : 1.5
-
+  // Re-read the app's own type with our rules switched off, then work out what
+  // an override would drag along with it. Synchronous, so nothing repaints in
+  // between and a click on Apply can't beat the pins to the payload.
   let style = doc.getElementById('__fonts-preview')
+  if (style) {
+    const held = style.textContent
+    style.textContent = ''
+    detected = detect(doc)
+    style.textContent = held
+  } else {
+    detected = detect(doc)
+  }
+  const pin = (pins = pinsFor(sel, detected))
+
+  // Writing the style before the faces land costs a second reflow when they do,
+  // so wait first. Only an optimization though: a stalled fetch still gets the
+  // swap, and anything cross-origin falls through to the synchronous path.
+  const token = ++applyToken
+  try {
+    await Promise.race([
+      ready.then(() => faceLoads(doc, sel)),
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+    ])
+  } catch {}
+  // A newer selection (or a fresh document) started while we waited — it owns
+  // the style now, and writing ours would flash the wrong font.
+  if (token !== applyToken || frame.contentDocument !== doc) return
+
   if (!style) {
     style = doc.createElement('style')
     style.id = '__fonts-preview'
     doc.head.appendChild(style)
   }
-  style.textContent = `
-    html { -webkit-text-size-adjust: 100%; }
-    body, p, li, td, th, input, textarea, select, button, blockquote, figcaption,
-    label, span, div, a { font-family: ${stack(selection.text)} !important; }
-    h1, h2, h3, h4, h5, h6 { font-family: ${stack(selection.header)} !important; }
-    code, pre, kbd, samp, tt { font-family: ${stack(selection.mono)} !important; }
-    p, li { line-height: ${leading}; }
-  `
+  style.textContent = `\n    ${previewCss(sel, pin)}\n  `
 }
 
-frame.addEventListener('load', applyPreview)
+// --- detection --------------------------------------------------------------
+
+const GENERIC = new Set([
+  'system-ui', 'ui-sans-serif', 'ui-serif', 'ui-monospace', 'ui-rounded',
+  '-apple-system', 'blinkmacsystemfont', 'sans-serif', 'serif', 'monospace',
+  'cursive', 'fantasy', 'emoji', 'math', 'fangsong', 'inherit', 'initial',
+])
+const DETECT = { header: 'h1,h2,h3,h4,h5,h6', text: 'body', mono: 'code,pre,kbd,samp' }
+const AXES = ['weight', 'width']
+
+// font-stretch computes to a percentage everywhere it matters; `normal` is the
+// one keyword still reported by older engines.
+const axisValue = (v) => (v === 'normal' ? 100 : parseFloat(v))
+
+// Declared as a function so the state block above can seed `detected` with it.
+function noDetection() {
+  return { family: {}, weight: {}, width: {} }
+}
+
+// Only ever called with the preview style absent, so it reads the app's own
+// type and not ours — a previous round's base weight would otherwise come back
+// as the page's, and the pin would chase itself.
+function detect(doc) {
+  const view = doc.defaultView
+  const out = noDetection()
+  for (const [role, sel] of Object.entries(DETECT)) {
+    const el = doc.querySelector(sel)
+    if (!el) continue
+    const cs = view.getComputedStyle(el)
+    const first = cs.fontFamily.split(',')[0].trim().replace(/^["']|["']$/g, '')
+    if (first && !GENERIC.has(first.toLowerCase())) out.family[role] = first
+    out.weight[role] = axisValue(cs.fontWeight)
+    out.width[role] = axisValue(cs.fontStretch)
+  }
+  return out
+}
+
+// Both axes inherit, so a base weight on `body` reaches headings and code on any
+// page whose reset hands them down — Tailwind's preflight sets `font-weight:
+// inherit` on h1..h6. An unset axis still writes nothing of its own; it gets
+// pinned to what the page already renders at, which is a change to no one but
+// the rule that would have leaked. Equal to the body's value is the test for
+// inheriting: a heading styled to that same weight is pinned to it either way.
+function pinsFor(sel, det) {
+  const out = {}
+  for (const role of ['header', 'mono']) {
+    const pin = {}
+    for (const axis of AXES) {
+      const v = det[axis][role]
+      // No probe on the page is nothing to protect.
+      if (v == null || !Number.isFinite(v)) continue
+      if (sel.text[axis] == null || sel[role][axis] != null) continue
+      if (v !== det[axis].text) continue
+      pin[axis] = v
+    }
+    if (Object.keys(pin).length) out[role] = pin
+  }
+  return out
+}
+
+function onFrameLoad() {
+  let doc
+  try {
+    doc = frame.contentDocument
+  } catch {}
+  if (!doc?.body) return
+  detected = detect(doc)
+  hasCode = !!doc.querySelector(DETECT.mono)
+  render()
+}
+
+frame.addEventListener('load', onFrameLoad)
 
 // --- tooltips ---------------------------------------------------------------
 
 const tipEl = document.getElementById('tip')
+const TIP_DELAY = 400
 let tipTimer = null
+let tipOpen = false
+let tipEverShown = false
+let tipHiddenAt = 0
 
 function attachTip(el, text, keys) {
-  const show = () => {
+  // Hover lands on the wrapper where there is one: a disabled button dispatches
+  // no mouse events, and undo/redo spend most of their life disabled.
+  const host = el.parentElement?.classList.contains('tip-wrap') ? el.parentElement : el
+  const show = (instant) => {
     tipEl.innerHTML = `<span>${text}</span>` + (keys ? `<span class="kbd">${keys}</span>` : '')
+    tipEl.toggleAttribute('data-instant', instant)
+    tipEl.dataset.shown = 'false'
     tipEl.dataset.open = 'true'
+    tipOpen = true
+    tipEverShown = true
     const r = el.getBoundingClientRect()
-    const t = tipEl.getBoundingClientRect()
-    tipEl.style.left = `${Math.max(8, Math.min(r.left + r.width / 2 - t.width / 2, innerWidth - t.width - 8))}px`
-    tipEl.style.top = `${r.top - t.height - 8}px`
+    // offsetWidth, not the rect: the entrance transform would scale a measured one.
+    // Reading it also flushes style, so the transition has a state to start from.
+    const w = tipEl.offsetWidth
+    const h = tipEl.offsetHeight
+    const below = r.top - h - 8 < 8
+    tipEl.dataset.below = String(below)
+    const center = r.left + r.width / 2
+    // Centred on the anchor unless that would clamp — an edge anchor gets its own
+    // edge instead, so the bubble stays square to the button and the arrow moves.
+    let left = center - w / 2
+    if (left + w > innerWidth - 8) left = r.right - w
+    else if (left < 8) left = r.left
+    left = Math.max(8, Math.min(left, innerWidth - w - 8))
+    tipEl.style.left = `${left}px`
+    tipEl.style.top = `${below ? r.bottom + 8 : r.top - h - 8}px`
+    tipEl.style.setProperty('--arrow-x', `${Math.max(10, Math.min(center - left, w - 10))}px`)
+    if (instant) tipEl.dataset.shown = 'true'
+    else requestAnimationFrame(() => tipOpen && (tipEl.dataset.shown = 'true'))
   }
   const hide = () => {
     clearTimeout(tipTimer)
+    if (tipOpen) tipHiddenAt = performance.now()
+    tipOpen = false
     tipEl.dataset.open = 'false'
+    tipEl.dataset.shown = 'false'
   }
-  el.addEventListener('mouseenter', () => {
+  host.addEventListener('mouseenter', () => {
     clearTimeout(tipTimer)
-    tipTimer = setTimeout(show, 400)
+    // A hop along the toolbar should read as one hover, so the delay is only
+    // paid on the way in — not again between neighbours.
+    if (tipEverShown && performance.now() - tipHiddenAt < TIP_DELAY) show(true)
+    else tipTimer = setTimeout(() => show(false), TIP_DELAY)
   })
-  el.addEventListener('mouseleave', hide)
-  el.addEventListener('click', hide)
+  host.addEventListener('mouseleave', hide)
+  host.addEventListener('click', hide)
   el.__hideTip = hide
+}
+
+// --- pairing ----------------------------------------------------------------
+
+const PAIR_COPY = { 'too-similar': 'too similar', competes: 'competes' }
+
+// TODO copy — user writes these
+const PAIR_MESSAGES = {
+  'too-similar': (a, b) =>
+    `Too similar. ${a} and ${b} are both ${byName.get(a).class} — the page will read as one voice.`,
+  competes: (a, b) => `Two showpieces. ${a} and ${b} both want the room.`,
+}
+
+// Same class is the general rule; avoid_with across classes is the data's list
+// of deliberate exceptions, and either font may be the one carrying it.
+function pairCheck(a, b) {
+  const fa = byName.get(a)
+  const fb = byName.get(b)
+  if (!fa || !fb) return null
+  if (fa.class === fb.class) return 'too-similar'
+  if (fa.avoid_with.includes(b) || fb.avoid_with.includes(a)) return 'competes'
+  return null
 }
 
 // --- rendering --------------------------------------------------------------
 
-const CARET = `<svg class="caret" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>`
+const CARET = `<svg class="caret" width="12" height="12" viewBox="0 0 256 256" fill="currentColor"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"/></svg>`
 const CHECK = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>`
 
-const selectsEl = document.getElementById('selects')
-const menus = new Map()
+const bodyEl = document.getElementById('body')
+const menuEl = document.getElementById('menu')
 
-for (const role of ROLES) {
-  const btn = document.createElement('button')
-  btn.className = 'select'
-  btn.dataset.role = role.id
-  btn.setAttribute('aria-expanded', 'false')
-  btn.innerHTML = `<span class="col"><span class="label">${role.label}</span><span class="value"></span></span>${CARET}`
-  btn.addEventListener('click', (e) => {
+function el(tag, cls, text) {
+  const n = document.createElement(tag)
+  if (cls) n.className = cls
+  if (text != null) n.textContent = text
+  return n
+}
+
+function pill(cls, anchorKind, role) {
+  const b = el('button', `pill ${cls}`)
+  b.setAttribute('aria-expanded', 'false')
+  b.addEventListener('click', (e) => {
     e.stopPropagation()
-    toggle(role.id)
+    openMenu(anchorKind, role, b)
   })
-  attachTip(btn, `Change ${role.label.toLowerCase()} font`, role.key.toUpperCase())
-  selectsEl.appendChild(btn)
+  return b
+}
 
-  const menu = document.createElement('div')
-  menu.className = 'menu'
-  menu.dataset.open = 'false'
-  document.body.appendChild(menu)
-  menus.set(role.id, { btn, menu })
-
-  let lastGroup = null
-  for (const f of listFor(role.id)) {
-    const g = groupOf(f)
-    if (g !== lastGroup) {
-      lastGroup = g
-      const h = document.createElement('div')
-      h.className = 'group'
-      h.textContent = g
-      menu.appendChild(h)
-    }
-    const row = document.createElement('button')
-    row.className = 'row'
-    row.dataset.name = f.name
-    row.dataset.stroke = f.stroke
-    row.dataset.class = f.class
-    row.innerHTML = `<span class="check"></span><span class="name">${f.name}</span>`
-    row.querySelector('.name').style.fontFamily = stack(f.name)
-    row.addEventListener('click', () => {
-      commit({ ...selection, [role.id]: f.name })
-      close()
-    })
-    menu.appendChild(row)
+function fontLane(role) {
+  const lane = el('div', 'lane')
+  lane.append(el('div', 'lane-label', 'Font'))
+  const b = pill('font', 'font', role)
+  const v = el('span', 'value')
+  const name = picked(role)
+  if (name) {
+    v.textContent = name
+  } else {
+    // The app's own family, reported rather than offered.
+    v.textContent = detected.family[role] ?? (role === 'mono' && !hasCode ? NO_MONO.pill : UNSET)
+    v.classList.add('unset')
   }
+  b.append(v)
+  b.insertAdjacentHTML('beforeend', CARET)
+  const label = ROLES.find((r) => r.id === role)
+  attachTip(b, `Change ${label.label.toLowerCase()} font`, label.key.toUpperCase())
+  lane.append(b)
+  return lane
+}
+
+function axisLane(role, axis) {
+  const s = selection[role]
+  const lane = el('div', 'lane')
+  lane.append(el('div', 'lane-label', axis === 'weight' ? 'Weight' : 'Width'))
+  const b = pill('axis', axis, role)
+  const v = el('span', 'value')
+  if (s[axis] == null) {
+    v.textContent = UNSET
+    v.classList.add('unset')
+  } else {
+    v.textContent = nameOf(axis, s[axis])
+  }
+  b.append(v)
+  b.insertAdjacentHTML('beforeend', CARET)
+  lane.append(b)
+  return lane
+}
+
+function section(role) {
+  const s = selection[role]
+  const sec = el('div', 'section')
+  sec.dataset.role = role
+  const head = el('div', 'sec-head')
+  head.append(el('span', 'sec-title', ROLES.find((r) => r.id === role).label))
+  sec.append(head, fontLane(role))
+  // No axes without a family — the payload has nowhere to put them.
+  if (s.font) {
+    const f = byName.get(s.font)
+    if (weightOptions(f).length > 1) sec.append(axisLane(role, 'weight'))
+    if (f.axes.includes('wdth')) sec.append(axisLane(role, 'width'))
+  }
+  return sec
+}
+
+const pairEl = el('div', null, null)
+pairEl.id = 'pairing'
+
+function pairingParts() {
+  const nodes = []
+  const h = picked('header')
+  const t = picked('text')
+  if (h || t) {
+    nodes.push(el('div', 'pair-label', 'Pairing'))
+    const id = h && t ? pairCheck(h, t) : null
+    if (id) nodes.push(el('div', 'pair-line', PAIR_MESSAGES[id](h, t)))
+    else {
+      for (const name of [h, t]) {
+        if (name) nodes.push(el('div', 'pair-note', `${name} — ${byName.get(name).note}`))
+      }
+    }
+  }
+  return { nodes, key: nodes.map((n) => n.textContent).join('␟') }
+}
+
+let pairKey = ''
+let pairTimer = null
+
+// This copy rewrites itself in answer to a pick made two sections away, so it
+// goes out behind a blur and comes back rather than cutting under the eye.
+function updatePairing() {
+  const { nodes, key } = pairingParts()
+  if (key === pairKey) return
+  const wasEmpty = pairKey === ''
+  pairKey = key
+  clearTimeout(pairTimer)
+  if (!key) {
+    pairEl.replaceChildren()
+    return pairEl.removeAttribute('data-swapping')
+  }
+  if (wasEmpty) {
+    // Nothing to blur out — there was no copy. Just the arrival.
+    pairEl.replaceChildren(...nodes)
+    pairEl.dataset.swapping = ''
+    void pairEl.offsetWidth
+    requestAnimationFrame(() => pairEl.removeAttribute('data-swapping'))
+    return
+  }
+  // render() re-appends this element, which cancels anything running on it. The
+  // flush gives the blur a state to leave from instead of jumping to it.
+  void pairEl.offsetWidth
+  pairEl.dataset.swapping = ''
+  pairTimer = setTimeout(() => {
+    pairEl.replaceChildren(...nodes)
+    pairEl.removeAttribute('data-swapping')
+  }, 120)
 }
 
 function render() {
-  for (const role of ROLES) {
-    const { btn, menu } = menus.get(role.id)
-    const name = selection[role.id]
-    const value = btn.querySelector('.value')
-    value.textContent = name
-    value.style.fontFamily = stack(name)
-    for (const row of menu.querySelectorAll('.row')) {
-      const on = row.dataset.name === name
-      row.querySelector('.check').innerHTML = on ? CHECK : ''
-      row.dataset.active = String(on)
-    }
-  }
+  close()
+  bodyEl.replaceChildren(...ROLES.map((r) => section(r.id)))
+  bodyEl.append(el('div', 'spacer'), pairEl)
+  updatePairing()
   undoBtn.disabled = past.length === 0
   redoBtn.disabled = future.length === 0
   resetApply()
@@ -370,32 +897,101 @@ function render() {
 
 let open = null
 
+function menuRow(label, active, onClick) {
+  const row = el('button', 'row')
+  const check = el('span', 'check')
+  check.innerHTML = active ? CHECK : ''
+  row.dataset.active = String(active)
+  row.append(check, el('span', 'name', label))
+  row.addEventListener('click', onClick)
+  return row
+}
+
+function unsetRow(active, onClick, label = UNSET) {
+  const row = menuRow(label, active, onClick)
+  row.querySelector('.name').classList.add('muted')
+  return row
+}
+
+function fillFontMenu(role) {
+  const label = role === 'mono' && !hasCode ? NO_MONO.row : UNSET
+  menuEl.append(unsetRow(!picked(role), () => setFont(role, null), label), el('div', 'sep'))
+  // A row is judged against the other role's pick, so there's nothing to judge
+  // until that role has one.
+  const against = role === 'mono' ? null : picked(role === 'header' ? 'text' : 'header')
+  let lastGroup = null
+  for (const f of listFor(role)) {
+    const g = groupOf(f)
+    if (g !== lastGroup) {
+      lastGroup = g
+      menuEl.append(el('div', 'group', g))
+    }
+    const on = picked(role) === f.name
+    const row = menuRow(f.name, on, () => setFont(role, f.name))
+    if (against) {
+      row.append(el('span', 'tag', on ? '' : PAIR_COPY[pairCheck(f.name, against)] ?? ''))
+    }
+    menuEl.append(row)
+  }
+}
+
+function fillAxisMenu(role, axis) {
+  const s = selection[role]
+  const f = byName.get(s.font)
+  menuEl.append(unsetRow(s[axis] == null, () => setAxis(role, axis, null)), el('div', 'sep'))
+  for (const [v, label] of optionsFor(f, axis)) {
+    const row = menuRow(label, s[axis] === v, () => setAxis(role, axis, v))
+    menuEl.append(row)
+  }
+}
+
+function place(anchor) {
+  const r = anchor.getBoundingClientRect()
+  menuEl.style.maxHeight = `${innerHeight - 24}px`
+  // Layout metrics, so the entrance scale doesn't feed back into the placement.
+  const h = menuEl.offsetHeight
+  let top = r.bottom + 6
+  if (top + h > innerHeight - 12) top = Math.max(12, innerHeight - 12 - h)
+  const left = Math.max(12, Math.min(r.right - MENU_W, innerWidth - MENU_W - 12))
+  menuEl.style.top = `${top}px`
+  menuEl.style.left = `${left}px`
+  // It grows out of its own top edge, under the middle of the pill it belongs to.
+  const originX = Math.max(0, Math.min(r.left + r.width / 2 - left, MENU_W))
+  menuEl.style.transformOrigin = `${originX}px 0`
+}
+
+// No exit animation: menus are toggled constantly, and a closing one in the way
+// of the next open is worse than no motion at all.
 function close() {
   if (!open) return
-  const { btn, menu } = menus.get(open)
-  menu.dataset.open = 'false'
-  btn.setAttribute('aria-expanded', 'false')
+  menuEl.dataset.open = 'false'
+  menuEl.dataset.shown = 'false'
+  open.anchor.setAttribute('aria-expanded', 'false')
   open = null
 }
 
-function toggle(roleId) {
-  const wasOpen = open === roleId
+function openMenu(kind, role, anchor, instant = false) {
+  const wasOpen = open?.kind === kind && open?.role === role
   close()
   if (wasOpen) return
-  const { btn, menu } = menus.get(roleId)
-  menus.get(roleId).btn.__hideTip?.()
-  menu.dataset.open = 'true'
-  btn.setAttribute('aria-expanded', 'true')
-  const r = btn.getBoundingClientRect()
-  menu.style.left = `${Math.max(12, Math.min(r.left, innerWidth - 352))}px`
-  menu.style.bottom = `${innerHeight - r.top + 8}px`
-  open = roleId
-  menu.querySelector('.row[data-active="true"]')?.scrollIntoView({ block: 'center' })
+  anchor.__hideTip?.()
+  menuEl.replaceChildren()
+  if (kind === 'font') fillFontMenu(role)
+  else fillAxisMenu(role, kind)
+  // A keyboard open is a jump, not a reveal.
+  menuEl.toggleAttribute('data-instant', instant)
+  menuEl.dataset.shown = 'false'
+  menuEl.dataset.open = 'true'
+  anchor.setAttribute('aria-expanded', 'true')
+  place(anchor)
+  open = { kind, role, anchor }
+  menuEl.querySelector('.row[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
+  if (instant) menuEl.dataset.shown = 'true'
+  else requestAnimationFrame(() => open && (menuEl.dataset.shown = 'true'))
 }
 
 document.addEventListener('click', close)
-document.getElementById('bar').addEventListener('click', (e) => e.stopPropagation())
-for (const { menu } of menus.values()) menu.addEventListener('click', (e) => e.stopPropagation())
+menuEl.addEventListener('click', (e) => e.stopPropagation())
 
 // --- history ----------------------------------------------------------------
 
@@ -404,13 +1000,13 @@ const redoBtn = document.getElementById('redo')
 
 function undo() {
   if (!past.length) return
-  future.push({ ...selection })
+  future.push(clone(selection))
   selection = past.pop()
   render()
 }
 function redo() {
   if (!future.length) return
-  past.push({ ...selection })
+  past.push(clone(selection))
   selection = future.pop()
   render()
 }
@@ -419,32 +1015,171 @@ redoBtn.addEventListener('click', redo)
 attachTip(undoBtn, 'Undo', '⌘Z')
 attachTip(redoBtn, 'Redo', '⇧⌘Z')
 
+// --- collapse ---------------------------------------------------------------
+
+const COLLAPSED_KEY = 'fonts:panel-collapsed'
+const collapseBtn = document.getElementById('collapse')
+const triggerBtn = document.getElementById('trigger')
+const panelEl = document.getElementById('panel')
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)')
+
+const isCollapsed = () => document.body.classList.contains('collapsed')
+
+function rememberCollapsed(v) {
+  try {
+    localStorage.setItem(COLLAPSED_KEY, v ? '1' : '0')
+  } catch {}
+}
+
+// Shown without its entrance: on first paint, and whenever the toggle is instant.
+function showTrigger(v, instant) {
+  if (instant) triggerBtn.toggleAttribute('data-instant', true)
+  triggerBtn.dataset.in = String(v)
+  if (instant) requestAnimationFrame(() => triggerBtn.removeAttribute('data-instant'))
+}
+
+let sliding = false
+
+// Both directions resize the iframe while the panel is floating over it, so the
+// reflow lands out of sight and the slide is the only thing anyone sees.
+function setCollapsed(v, instant = REDUCED.matches) {
+  close()
+  if (isCollapsed() === v && !sliding) {
+    if (instant) showTrigger(v, true)
+    return
+  }
+  rememberCollapsed(v)
+  if (instant) {
+    sliding = false
+    panelEl.style.willChange = ''
+    document.body.classList.remove('panel-float', 'panel-out')
+    document.body.classList.toggle('collapsed', v)
+    showTrigger(v, true)
+    return
+  }
+  sliding = true
+  panelEl.style.willChange = 'transform'
+  // Either way the trigger leaves at once; it only fades on the way back in.
+  triggerBtn.dataset.in = 'false'
+  if (v) {
+    // Off the flex line first: the iframe takes the full width behind the panel,
+    // and only then does the panel move off it.
+    document.body.classList.add('panel-float')
+    panelEl.getBoundingClientRect()
+    document.body.classList.add('panel-out')
+    return
+  }
+  document.body.classList.add('panel-float', 'panel-out')
+  document.body.classList.remove('collapsed')
+  panelEl.getBoundingClientRect()
+  requestAnimationFrame(() => document.body.classList.remove('panel-out'))
+}
+
+panelEl.addEventListener('transitionend', (e) => {
+  if (e.target !== panelEl || e.propertyName !== 'transform' || !sliding) return
+  sliding = false
+  panelEl.style.willChange = ''
+  const collapsing = document.body.classList.contains('panel-out')
+  document.body.classList.remove('panel-float', 'panel-out')
+  if (!collapsing) return
+  // Dropping the float on the way in is what narrows the iframe; on the way out
+  // the panel is already gone, so it just stops being drawn.
+  document.body.classList.add('collapsed')
+  void triggerBtn.offsetWidth
+  requestAnimationFrame(() => isCollapsed() && (triggerBtn.dataset.in = 'true'))
+})
+
+// The panel moves the same way however the toggle was reached.
+const togglePanel = () => setCollapsed(!isCollapsed())
+
+collapseBtn.addEventListener('click', () => setCollapsed(true))
+triggerBtn.addEventListener('click', () => setCollapsed(false))
+attachTip(collapseBtn, 'Hide Fonts panel', 'P')
+attachTip(triggerBtn, 'Open Fonts panel', 'P')
+
+try {
+  if (localStorage.getItem(COLLAPSED_KEY) === '1') {
+    document.body.classList.add('collapsed')
+    showTrigger(true, true)
+  }
+} catch {}
+
 // --- apply / done -----------------------------------------------------------
 
 const applyBtn = document.getElementById('apply')
-const doneBtn = document.getElementById('done')
+const applyLabel = applyBtn.querySelector('.label')
 const APPLY_LABEL = session.watched ? 'Apply to code' : 'Save selection'
-
-// Changing anything after an apply puts the button back in its ready state —
-// applying is a step in the loop now, not the end of it.
-function resetApply() {
-  applyBtn.textContent = APPLY_LABEL
-  applyBtn.disabled = false
+const APPLY_LABELS = {
+  idle: APPLY_LABEL,
+  applying: 'Applying…',
+  done: 'Code updated',
+  saved: 'Saved',
+  failed: "Couldn't apply",
 }
+// Failure stays clickable so a retry doesn't have to wait the label out.
+const APPLY_ENABLED = { idle: true, failed: true }
+
+let applyState = 'idle'
+let applyTimer = null
+let labelTimer = null
+
+// The label is the only thing that changes between states, so it swaps behind a
+// blur instead of cutting. Nothing here touches the state machine's own timings.
+function setLabel(text) {
+  if (applyLabel.textContent === text) return
+  clearTimeout(labelTimer)
+  applyLabel.dataset.swapping = ''
+  labelTimer = setTimeout(() => {
+    applyLabel.textContent = text
+    labelTimer = setTimeout(() => applyLabel.removeAttribute('data-swapping'), 100)
+  }, 100)
+}
+
+function setApply(state) {
+  clearTimeout(applyTimer)
+  applyState = state
+  setLabel(APPLY_LABELS[state])
+  applyBtn.disabled = !APPLY_ENABLED[state] || !anyPicked()
+  if (state === 'done' || state === 'saved') applyTimer = setTimeout(() => setApply('idle'), 2000)
+  else if (state === 'failed') applyTimer = setTimeout(() => setApply('idle'), 3000)
+  // Nothing ever reported back. Fall silent rather than claim either outcome.
+  else if (state === 'applying') applyTimer = setTimeout(() => setApply('idle'), 120_000)
+}
+
+// A selection change mid-round must not relabel the button — the round is still
+// running, and "Apply to code" would read as if nothing had been asked for.
+function resetApply() {
+  if (applyState === 'idle') setApply('idle')
+  else applyBtn.disabled = !APPLY_ENABLED[applyState] || !anyPicked()
+}
+
+// Whoever is acting on the apply reports the outcome here.
+const applyEvents = new EventSource(`${PREFIX}/events`)
+applyEvents.addEventListener('status', (e) => {
+  if (applyState !== 'applying') return
+  let status = {}
+  try {
+    status = JSON.parse(e.data)
+  } catch {}
+  setApply(status.state === 'done' ? 'done' : 'failed')
+})
 
 attachTip(
   applyBtn,
-  session.watched ? 'Update fonts across your project' : 'Save to .fonts-selection.json',
+  session.watched
+    ? 'Write these fonts into your code'
+    : 'No Claude session listening — saves your picks for later',
   '⌘↵',
 )
-attachTip(doneBtn, 'Close the picker')
 
 applyBtn.addEventListener('click', async () => {
-  applyBtn.disabled = true
-  applyBtn.textContent = 'Applying…'
+  if (applyBtn.disabled) return
+  setApply('applying')
   const payload = {}
   for (const role of ROLES) {
-    const f = byName.get(selection[role.id])
+    const s = selection[role.id]
+    if (!s?.font) continue
+    const f = byName.get(s.font)
     payload[role.id] = {
       name: f.name,
       stroke: f.stroke,
@@ -452,30 +1187,28 @@ applyBtn.addEventListener('click', async () => {
       variable: f.axes.length > 0,
       wght: f.wght,
       weights: f.weights,
-      css: cssUrl([f], true),
+      wdth: wdthRange(f),
+      weight: s.weight,
+      width: s.width,
+      css: cssUrl([f]),
       stack: stack(f.name),
     }
   }
-  payload.lineHeight = { text: byName.get(selection.text).stroke === 'SERIF' ? 1.7 : 1.5 }
+  if (selection.text?.font) {
+    payload.lineHeight = { text: byName.get(selection.text.font).stroke === 'SERIF' ? 1.7 : 1.5 }
+  }
+  if (Object.keys(pins).length) payload.pins = pins
   try {
     await fetch(`${PREFIX}/apply`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
       body: JSON.stringify(payload),
     })
-    applyBtn.textContent = 'Applied'
+    // Unwatched, nobody will report back — the write to disk is the whole job.
+    if (!session.watched) setApply('saved')
   } catch {
-    applyBtn.textContent = 'Failed'
-    applyBtn.disabled = false
+    setApply('failed')
   }
-})
-
-doneBtn.addEventListener('click', async () => {
-  doneBtn.disabled = true
-  await fetch(`${PREFIX}/done`, { method: 'POST' }).catch(() => {})
-  document.body.innerHTML =
-    `<div style="display:flex;height:100%;align-items:center;justify-content:center;` +
-    `font-family:var(--ui);font-size:14px;color:#737373">Picker closed. You can close this tab.</div>`
 })
 
 // --- keyboard ---------------------------------------------------------------
@@ -492,14 +1225,19 @@ addEventListener('keydown', (e) => {
     return
   }
   if (e.key === 'Escape') return close()
-  const role = ROLES.find((r) => r.key === e.key.toLowerCase())
-  if (role) {
+  if (e.key.toLowerCase() === 'p') {
     e.preventDefault()
-    toggle(role.id)
+    return togglePanel()
   }
+  const role = ROLES.find((r) => r.key === e.key.toLowerCase())
+  if (!role || document.body.classList.contains('collapsed')) return
+  e.preventDefault()
+  const anchor = bodyEl.querySelector(`.section[data-role="${role.id}"] .pill.font`)
+  if (anchor) openMenu('font', role.id, anchor, true)
 })
 
 render()
+onFrameLoad()
 </script>
 </body>
 </html>

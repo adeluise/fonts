@@ -172,6 +172,33 @@ function start({ devPort, onApply, onDone }) {
   // time out as an error. The caller re-issues it.
   setInterval(() => flush({ event: 'idle' }), 90_000).unref()
 
+  // The other direction: whoever acts on an apply reports back here, and the
+  // shell learns of it over SSE. Without it the button can only claim the work
+  // was requested, not that it happened.
+  let clients = []
+  const broadcast = (body) => {
+    const frame = `event: status\ndata: ${JSON.stringify(body)}\n\n`
+    for (const res of clients) res.write(frame)
+  }
+  setInterval(() => {
+    for (const res of clients) res.write(': ping\n\n')
+  }, 30_000).unref()
+
+  // The tab is the session, and this stream is how we know it's still there.
+  // The delay is for reloads and navigations, which drop the stream for a
+  // moment; nothing is armed until a tab has connected once, since the user may
+  // take a while to open the URL.
+  const IDLE_MS = 15_000
+  let seenClient = false
+  let idleTimer = null
+  const armIdle = () => {
+    if (!seenClient || clients.length || idleTimer) return
+    idleTimer = setTimeout(() => {
+      flush({ event: 'done' })
+      onDone()
+    }, IDLE_MS)
+  }
+
   const server = createServer(async (req, res) => {
     const url = new URL(req.url, 'http://localhost')
 
@@ -189,6 +216,44 @@ function start({ devPort, onApply, onDone }) {
       res.end('{"ok":true}')
       await onApply(payload)
       return flush({ event: 'apply', selection: payload })
+    }
+
+    if (url.pathname === `${PREFIX}/status` && req.method === 'POST') {
+      const chunks = []
+      for await (const c of req) chunks.push(c)
+      let payload
+      try {
+        payload = JSON.parse(Buffer.concat(chunks).toString() || '{}')
+      } catch {
+        res.writeHead(400, { 'content-type': MIME['.json'] })
+        return res.end('{"error":"bad json"}')
+      }
+      if (payload?.state !== 'done' && payload?.state !== 'failed') {
+        res.writeHead(400, { 'content-type': MIME['.json'] })
+        return res.end('{"error":"state must be done or failed"}')
+      }
+      const message = typeof payload.message === 'string' ? payload.message : undefined
+      broadcast({ state: payload.state, message })
+      res.writeHead(200, { 'content-type': MIME['.json'] })
+      return res.end('{"ok":true}')
+    }
+
+    if (url.pathname === `${PREFIX}/events`) {
+      res.writeHead(200, {
+        'content-type': 'text/event-stream; charset=utf-8',
+        'cache-control': 'no-cache',
+        connection: 'keep-alive',
+        'x-no-compression': '1',
+      })
+      res.write(': open\n\n')
+      seenClient = true
+      clearTimeout(idleTimer)
+      idleTimer = null
+      clients.push(res)
+      return req.on('close', () => {
+        clients = clients.filter((c) => c !== res)
+        armIdle()
+      })
     }
 
     if (url.pathname === `${PREFIX}/wait`) {
