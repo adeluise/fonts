@@ -69,15 +69,15 @@
     width: 36px; height: 36px; flex-shrink: 0;
     border: 0; border-radius: var(--radius); background: transparent;
     color: var(--ink); cursor: pointer; padding: 0;
-    transition: transform 160ms var(--ease-out);
   }
-  .icon-btn:not(:disabled):active { transform: scale(0.97); }
   .icon-btn:disabled { color: #D4D4D4; cursor: default; }
   /* A disabled button dispatches no mouse events, so the tooltip's hover target
      has to be something around it. */
   .tip-wrap { display: flex; min-width: 0; }
   /* The divider reads as the panel edge, so it has to sit on the panel's side. */
   #collapse svg { transform: scaleX(-1); }
+  /* Dark is the same glyph with the filled half on the other side. */
+  #theme[data-theme="dark"] svg { transform: scaleX(-1); }
 
   #body { flex: 1 1 auto; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; }
   #body::-webkit-scrollbar { width: 10px; }
@@ -91,6 +91,17 @@
     flex-grow: 1; font-size: 12px; font-weight: 600; color: var(--ink);
     letter-spacing: 0; line-height: 14px;
   }
+  /* The shortcut named beside the section it opens, rather than hidden in a
+     tooltip on the pill. It is the tooltip's chip, so the box is written once
+     for both and only the colors answer to the surface underneath. */
+  .sec-key, #tip .kbd {
+    display: flex; align-items: center; justify-content: center;
+    height: 18px; min-width: 18px; padding: 0 5px; flex-shrink: 0;
+    border-radius: 4px; border: 1px solid;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 500;
+    line-height: 16px; letter-spacing: -.002em;
+  }
+  .sec-key { background: var(--fill); border-color: var(--line); color: var(--muted); }
   .lane { display: flex; align-items: center; gap: 12px; width: 100%; }
   .lane-label {
     width: 64px; flex-shrink: 0;
@@ -159,19 +170,16 @@
   /* --- collapsed trigger --- */
 
   #trigger {
-    position: fixed; bottom: 16px; right: 16px; z-index: 8;
+    position: fixed; top: 16px; right: 16px; z-index: 8;
     display: none; align-items: center; justify-content: center;
     width: 40px; height: 40px; padding: 0;
     border: 1px solid var(--line); border-radius: 10px;
     background: #fff; color: var(--ink); box-shadow: var(--shadow); cursor: pointer;
     opacity: 0; scale: .95;
-    /* The entrance rides `scale` so `transform` stays free for the press. */
-    transition: opacity 200ms var(--ease-out), scale 200ms var(--ease-out),
-                transform 160ms var(--ease-out);
+    transition: opacity 200ms var(--ease-out), scale 200ms var(--ease-out);
   }
   body.collapsed #trigger { display: flex; }
   #trigger[data-in="true"] { opacity: 1; scale: 1; }
-  #trigger:active { transform: scale(0.97); }
   #trigger[data-instant] { transition-duration: 0ms; }
 
   /* --- menus --- */
@@ -189,8 +197,14 @@
   }
   #menu[data-open="true"] { display: flex; }
   #menu[data-open="true"][data-shown="true"] { opacity: 1; transform: scale(1); }
-  /* Keyboard opens don't animate. */
+  /* Keyboard opens don't animate. Closes always do — the rule is about arriving. */
   #menu[data-instant] { transition-duration: 0ms; }
+  /* Out shorter than in, and barely moving: a menu on its way out must not be in
+     the way of the next one, under the eye or the pointer. */
+  #menu[data-closing] {
+    opacity: 0; transform: scale(0.97); pointer-events: none;
+    transition-duration: 120ms;
+  }
   #menu::-webkit-scrollbar { width: 10px; }
   #menu::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 3.5px solid #fff; }
   .sep { flex-shrink: 0; height: 1px; background: var(--line); margin: 4px 10px; }
@@ -204,6 +218,8 @@
     cursor: pointer; text-align: left; color: var(--ink);
   }
   .row[data-active="true"] { background: var(--fill); }
+  /* Arrow keys move real focus, so the focused row is lit the way a hovered one is. */
+  .row:focus { outline: 0; background: var(--fill); }
   .row .check { display: flex; align-items: center; justify-content: center; width: 16px; flex-shrink: 0; }
   .row .name {
     flex-grow: 1; min-width: 0; font-family: var(--ui); font-size: 14px; font-weight: 400;
@@ -239,12 +255,10 @@
     border-radius: 1px;
   }
   #tip[data-below="true"]::after { bottom: auto; top: -4px; }
+  /* Box shared with .sec-key; against the dark bubble only the colors change. */
   #tip .kbd {
-    display: flex; align-items: center; justify-content: center;
-    height: 18px; min-width: 18px; padding: 0 5px; flex-shrink: 0;
-    border-radius: 4px; background: rgba(255,255,255,.13);
-    border: 1px solid rgba(255,255,255,.18);
-    font-family: var(--mono); font-size: 10.5px; color: rgba(255,255,255,.72);
+    background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.18);
+    color: rgba(255,255,255,.72);
   }
 
   /* --- motion gates --- */
@@ -264,12 +278,11 @@
   @media (prefers-reduced-motion: reduce) {
     #panel { transition: none; }
     #trigger { scale: 1; transition: opacity 200ms var(--ease-out); }
-    #menu, #menu[data-open="true"][data-shown="true"] { transform: none; }
+    #menu, #menu[data-open="true"][data-shown="true"], #menu[data-closing] { transform: none; }
     #menu { transition: opacity 200ms var(--ease-out); }
     #tip, #tip[data-open="true"][data-shown="true"] { transform: none; }
     #tip { transition: opacity 125ms var(--ease-out); }
-    .icon-btn, #apply { transition: none; }
-    .icon-btn:not(:disabled):active, #trigger:active,
+    #apply { transition: none; }
     #apply:not(:disabled):active { transform: none; }
   }
 </style>
@@ -340,7 +353,9 @@ const WIDTHS = [
 ]
 
 const data = await fetch(`${PREFIX}/fonts.json`).then((r) => r.json())
-const session = await fetch(`${PREFIX}/session`).then((r) => r.json()).catch(() => ({ watched: false }))
+const session = await fetch(`${PREFIX}/session`)
+  .then((r) => r.json())
+  .catch(() => ({ watched: false, empty: false }))
 const byName = new Map(data.fonts.map((f) => [f.name, f]))
 
 const groupOf = (f) => (f.class === 'mono' ? 'Mono' : f.stroke === 'SERIF' ? 'Serif' : 'Sans')
@@ -444,7 +459,15 @@ for (const href of SHEETS) {
 const blank = () => ({ font: null, weight: null, width: null })
 
 // Nothing is chosen on open: the app keeps its own type until the user picks.
+// The specimen is the exception — there is no code behind it to keep, so it
+// opens on a pairing. Seeded before the first render, which previews it the way
+// a pick would; the baseline, so there's nothing to undo back to.
+const PRESET = { header: 'Bricolage Grotesque', text: 'Geist' }
+
 let selection = { header: blank(), text: blank(), mono: blank() }
+if (session.empty) {
+  for (const [role, name] of Object.entries(PRESET)) selection[role].font = name
+}
 let detected = noDetection()
 // Roles the preview holds in place so a base weight can't leak into them.
 let pins = {}
@@ -668,6 +691,13 @@ function onFrameLoad() {
 
 frame.addEventListener('load', onFrameLoad)
 
+// The specimen answers to a theme attribute; a real app doesn't, so this only
+// runs in the empty state. Global so a switch outside this module can reach it.
+window.setTheme = (name) => {
+  if (!session.empty) return
+  frame.contentDocument?.documentElement.setAttribute('data-theme', name)
+}
+
 // --- tooltips ---------------------------------------------------------------
 
 const tipEl = document.getElementById('tip')
@@ -767,9 +797,12 @@ function el(tag, cls, text) {
 function pill(cls, anchorKind, role) {
   const b = el('button', `pill ${cls}`)
   b.setAttribute('aria-expanded', 'false')
+  // The one thing that survives a re-render: which pill this was.
+  b.dataset.pill = `${role}:${anchorKind}`
   b.addEventListener('click', (e) => {
     e.stopPropagation()
-    openMenu(anchorKind, role, b)
+    // Enter or Space on the pill is a keyboard open, the same as H/T/M.
+    openMenu(anchorKind, role, b, e.detail === 0)
   })
   return b
 }
@@ -789,8 +822,6 @@ function fontLane(role) {
   }
   b.append(v)
   b.insertAdjacentHTML('beforeend', CARET)
-  const label = ROLES.find((r) => r.id === role)
-  attachTip(b, `Change ${label.label.toLowerCase()} font`, label.key.toUpperCase())
   lane.append(b)
   return lane
 }
@@ -818,7 +849,8 @@ function section(role) {
   const sec = el('div', 'section')
   sec.dataset.role = role
   const head = el('div', 'sec-head')
-  head.append(el('span', 'sec-title', ROLES.find((r) => r.id === role).label))
+  const meta = ROLES.find((r) => r.id === role)
+  head.append(el('span', 'sec-title', meta.label), el('span', 'sec-key', meta.key.toUpperCase()))
   sec.append(head, fontLane(role))
   // No axes without a family — the payload has nowhere to put them.
   if (s.font) {
@@ -884,7 +916,11 @@ function updatePairing() {
 
 function render() {
   close()
+  // Picking from a menu re-renders the panel under the focus close() just handed
+  // back, so the pill that replaces it takes it again.
+  const focused = document.activeElement?.dataset?.pill
   bodyEl.replaceChildren(...ROLES.map((r) => section(r.id)))
+  if (focused) bodyEl.querySelector(`[data-pill="${focused}"]`)?.focus({ preventScroll: true })
   bodyEl.append(el('div', 'spacer'), pairEl)
   updatePairing()
   undoBtn.disabled = past.length === 0
@@ -899,6 +935,8 @@ let open = null
 
 function menuRow(label, active, onClick) {
   const row = el('button', 'row')
+  // Reachable by focus() and by the arrows, never by Tab.
+  row.tabIndex = -1
   const check = el('span', 'check')
   check.innerHTML = active ? CHECK : ''
   row.dataset.active = String(active)
@@ -960,38 +998,117 @@ function place(anchor) {
   menuEl.style.transformOrigin = `${originX}px 0`
 }
 
-// No exit animation: menus are toggled constantly, and a closing one in the way
-// of the next open is worse than no motion at all.
-function close() {
-  if (!open) return
-  menuEl.dataset.open = 'false'
-  menuEl.dataset.shown = 'false'
-  open.anchor.setAttribute('aria-expanded', 'false')
-  open = null
+// Focus is the highlight — there is no second one to keep in step with it, and
+// a reader follows it for free. Separators and group labels aren't rows, so
+// they are never stops. Each entry says where to land, including from nothing
+// focused after a mouse open.
+const MENU_NAV = {
+  ArrowDown: (i) => (i < 0 ? 0 : i + 1),
+  ArrowUp: (i, n) => (i < 0 ? n - 1 : i - 1),
+  Home: () => 0,
+  End: (i, n) => n - 1,
 }
 
-function openMenu(kind, role, anchor, instant = false) {
+function moveRow(step) {
+  const rows = [...menuEl.querySelectorAll('.row')]
+  const n = rows.length
+  if (!n) return
+  const row = rows[((step(rows.indexOf(document.activeElement), n) % n) + n) % n]
+  // focus() would scroll the row to the edge of the menu; nearest just reveals it.
+  row.focus({ preventScroll: true })
+  row.scrollIntoView({ block: 'nearest' })
+}
+
+let closeTimer = null
+
+// The exit is a state on the element rather than a queue, so re-opening only has
+// to clear it. The timer is a backstop for a transitionend that never arrives.
+function hideMenu() {
+  if (open) return
+  clearTimeout(closeTimer)
+  menuEl.removeAttribute('data-closing')
+  menuEl.dataset.open = 'false'
+}
+
+menuEl.addEventListener('transitionend', (e) => {
+  if (e.target === menuEl && e.propertyName === 'opacity') hideMenu()
+})
+
+// Menus are toggled constantly, so the way out is shorter than the way in and
+// stops taking clicks the moment it starts.
+function close() {
+  if (!open) return
+  const { anchor } = open
+  anchor.setAttribute('aria-expanded', 'false')
+  open = null
+  // However it was opened, it leaves the same way.
+  menuEl.removeAttribute('data-instant')
+  menuEl.removeAttribute('data-shown')
+  menuEl.dataset.closing = ''
+  clearTimeout(closeTimer)
+  closeTimer = setTimeout(hideMenu, 200)
+  // The keyboard came from the pill, so it goes back to it.
+  if (menuEl.contains(document.activeElement)) anchor.focus()
+}
+
+function openMenu(kind, role, anchor, fromKey = false) {
   const wasOpen = open?.kind === kind && open?.role === role
   close()
   if (wasOpen) return
+  // Whatever was on its way out, this open takes the element back.
+  clearTimeout(closeTimer)
+  menuEl.removeAttribute('data-closing')
   anchor.__hideTip?.()
   menuEl.replaceChildren()
   if (kind === 'font') fillFontMenu(role)
   else fillAxisMenu(role, kind)
   // A keyboard open is a jump, not a reveal.
-  menuEl.toggleAttribute('data-instant', instant)
+  menuEl.toggleAttribute('data-instant', fromKey)
   menuEl.dataset.shown = 'false'
   menuEl.dataset.open = 'true'
   anchor.setAttribute('aria-expanded', 'true')
   place(anchor)
   open = { kind, role, anchor }
-  menuEl.querySelector('.row[data-active="true"]')?.scrollIntoView({ block: 'nearest' })
-  if (instant) menuEl.dataset.shown = 'true'
+  const active = menuEl.querySelector('.row[data-active="true"]')
+  // Opened from the keyboard, the highlight starts on the current pick; opened
+  // by mouse, it waits for the pointer.
+  if (fromKey) active?.focus({ preventScroll: true })
+  active?.scrollIntoView({ block: 'nearest' })
+  if (fromKey) menuEl.dataset.shown = 'true'
   else requestAnimationFrame(() => open && (menuEl.dataset.shown = 'true'))
 }
 
 document.addEventListener('click', close)
 menuEl.addEventListener('click', (e) => e.stopPropagation())
+
+// --- background -------------------------------------------------------------
+
+const THEMES = ['light', 'dark']
+
+// Phosphor's circle-half at the undo/redo stroke weight — dark is the same
+// glyph, mirrored in CSS.
+const HALF_ICON = `<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 0 0 18Z" fill="currentColor" stroke="none"/></svg>`
+
+// Only the specimen answers to a theme, so an app gets no button at all rather
+// than a hidden one nothing can reach but the keyboard.
+let themeBtn = null
+
+if (session.empty) {
+  themeBtn = el('button', 'icon-btn')
+  themeBtn.id = 'theme'
+  themeBtn.dataset.theme = THEMES[0]
+  themeBtn.innerHTML = HALF_ICON
+  const wrap = el('span', 'tip-wrap')
+  wrap.append(themeBtn)
+  document.querySelector('.history').prepend(wrap)
+  attachTip(themeBtn, 'Switch background', 'B')
+  // The icon is the current background, not the next one.
+  themeBtn.addEventListener('click', () => {
+    const name = themeBtn.dataset.theme === THEMES[0] ? THEMES[1] : THEMES[0]
+    setTheme(name)
+    themeBtn.dataset.theme = name
+  })
+}
 
 // --- history ----------------------------------------------------------------
 
@@ -1017,19 +1134,12 @@ attachTip(redoBtn, 'Redo', '⇧⌘Z')
 
 // --- collapse ---------------------------------------------------------------
 
-const COLLAPSED_KEY = 'fonts:panel-collapsed'
 const collapseBtn = document.getElementById('collapse')
 const triggerBtn = document.getElementById('trigger')
 const panelEl = document.getElementById('panel')
 const REDUCED = matchMedia('(prefers-reduced-motion: reduce)')
 
 const isCollapsed = () => document.body.classList.contains('collapsed')
-
-function rememberCollapsed(v) {
-  try {
-    localStorage.setItem(COLLAPSED_KEY, v ? '1' : '0')
-  } catch {}
-}
 
 // Shown without its entrance: on first paint, and whenever the toggle is instant.
 function showTrigger(v, instant) {
@@ -1048,7 +1158,6 @@ function setCollapsed(v, instant = REDUCED.matches) {
     if (instant) showTrigger(v, true)
     return
   }
-  rememberCollapsed(v)
   if (instant) {
     sliding = false
     panelEl.style.willChange = ''
@@ -1096,13 +1205,6 @@ collapseBtn.addEventListener('click', () => setCollapsed(true))
 triggerBtn.addEventListener('click', () => setCollapsed(false))
 attachTip(collapseBtn, 'Hide Fonts panel', 'P')
 attachTip(triggerBtn, 'Open Fonts panel', 'P')
-
-try {
-  if (localStorage.getItem(COLLAPSED_KEY) === '1') {
-    document.body.classList.add('collapsed')
-    showTrigger(true, true)
-  }
-} catch {}
 
 // --- apply / done -----------------------------------------------------------
 
@@ -1225,11 +1327,22 @@ addEventListener('keydown', (e) => {
     return
   }
   if (e.key === 'Escape') return close()
-  if (e.key.toLowerCase() === 'p') {
+  // An open menu owns the arrows, wherever focus happens to be.
+  if (open && MENU_NAV[e.key]) {
+    e.preventDefault()
+    return moveRow(MENU_NAV[e.key])
+  }
+  const k = e.key.toLowerCase()
+  if (k === 'p') {
     e.preventDefault()
     return togglePanel()
   }
-  const role = ROLES.find((r) => r.key === e.key.toLowerCase())
+  // Only the specimen has a background to switch, so B is that button or nothing.
+  if (k === 'b' && !open) {
+    e.preventDefault()
+    return themeBtn?.click()
+  }
+  const role = ROLES.find((r) => r.key === k)
   if (!role || document.body.classList.contains('collapsed')) return
   e.preventDefault()
   const anchor = bodyEl.querySelector(`.section[data-role="${role.id}"] .pill.font`)

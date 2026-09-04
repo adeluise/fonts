@@ -271,10 +271,13 @@ function start({ devPort, onApply, onDone }) {
     }
 
     // Tells the shell whether anyone is going to act on an apply, so the button
-    // can say "Apply to code" only when that's true.
+    // can say "Apply to code" only when that's true — and whether the frame is
+    // holding the specimen rather than an app, which the shell styles for.
     if (url.pathname === `${PREFIX}/session`) {
       res.writeHead(200, { 'content-type': MIME['.json'] })
-      return res.end(JSON.stringify({ watched: process.env.FONTS_SKILL === '1' }))
+      return res.end(
+        JSON.stringify({ watched: process.env.FONTS_SKILL === '1', empty: !devPort }),
+      )
     }
 
     if (url.pathname === PREFIX || url.pathname.startsWith(`${PREFIX}/`)) {
