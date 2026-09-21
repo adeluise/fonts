@@ -17,8 +17,11 @@
     --label: #666666;
     --line: #E5E5E5;
     --fill: #F5F5F5;
-    --radius: 8px;
+    --radius: 12px;
     --shadow: 0 1px 2px rgba(0,0,0,.05), 0 14px 36px rgba(0,0,0,.13);
+    /* A control reads as its own object on the white panel: an outline to hold
+       its edge, and just enough shadow to lift it off the ground. */
+    --shadow-ctl: 0 1px 2px rgba(0,0,0,.04);
     --ui: "DM Sans", system-ui, sans-serif;
     --mono: "Geist Mono", ui-monospace, monospace;
     /* Entrances and exits; the drawer curve is only for the panel. */
@@ -58,8 +61,8 @@
     border-bottom: 1px solid var(--line);
   }
   #head .title {
-    flex-grow: 1; font-size: 14px; font-weight: 600;
-    color: var(--ink); letter-spacing: -.01em; line-height: 18px;
+    flex-grow: 1; font-size: 15px; font-weight: 600;
+    color: var(--ink); letter-spacing: -.01em; line-height: 20px;
   }
   .history { display: flex; align-items: center; gap: 2px; }
   .rule { width: 1px; height: 20px; flex-shrink: 0; background: var(--line); margin: 0 2px; }
@@ -67,7 +70,8 @@
   .icon-btn {
     display: flex; align-items: center; justify-content: center;
     width: 36px; height: 36px; flex-shrink: 0;
-    border: 0; border-radius: var(--radius); background: transparent;
+    border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+    box-shadow: var(--shadow-ctl);
     color: var(--ink); cursor: pointer; padding: 0;
   }
   .icon-btn:disabled { color: #D4D4D4; cursor: default; }
@@ -88,32 +92,30 @@
   .section + .section { padding-top: 36px; }
   .sec-head { display: flex; align-items: center; gap: 8px; padding-bottom: 8px; }
   .sec-title {
-    flex-grow: 1; font-size: 12px; font-weight: 600; color: var(--ink);
-    letter-spacing: 0; line-height: 14px;
+    flex-grow: 1; font-size: 15px; font-weight: 600; color: var(--ink);
+    letter-spacing: -.01em; line-height: 20px;
   }
-  /* The shortcut named beside the section it opens, rather than hidden in a
-     tooltip on the pill. It is the tooltip's chip, so the box is written once
-     for both and only the colors answer to the surface underneath. */
-  .sec-key, #tip .kbd {
+  /* Only the tooltip carries a key chip now; the sections open by click. */
+  #tip .kbd {
     display: flex; align-items: center; justify-content: center;
     height: 18px; min-width: 18px; padding: 0 5px; flex-shrink: 0;
     border-radius: 4px; border: 1px solid;
     font-family: var(--mono); font-size: 10.5px; font-weight: 500;
     line-height: 16px; letter-spacing: -.002em;
   }
-  .sec-key { background: var(--fill); border-color: var(--line); color: var(--muted); }
   .lane { display: flex; align-items: center; gap: 12px; width: 100%; }
   .lane-label {
     width: 64px; flex-shrink: 0;
-    font-size: 12px; font-weight: 500; color: var(--label);
-    letter-spacing: 0; line-height: 14px;
+    font-size: 13px; font-weight: 400; color: var(--label);
+    letter-spacing: 0; line-height: 18px;
   }
   /* Font and axis pills are the same object at three scopes, so they are the
      same size — a taller header pill read as an inconsistency, not a hierarchy. */
   .pill {
     display: flex; align-items: center; gap: 10px; flex-grow: 1; min-width: 0;
-    height: 40px; padding: 0 12px;
-    border: 0; border-radius: 10px; background: var(--fill);
+    padding: 9px 12px;
+    border: 1px solid var(--line); border-radius: var(--radius); background: #fff;
+    box-shadow: var(--shadow-ctl);
     cursor: pointer; text-align: left; font-family: var(--ui);
   }
   /* No press state on the pills or the rows: they open something, and the menu
@@ -121,8 +123,8 @@
   .pill[aria-expanded="true"] { background: #EDEDED; }
   .pill .value {
     flex-grow: 1; min-width: 0; color: var(--ink);
-    font-family: var(--ui); font-size: 14px; font-weight: 500;
-    line-height: 20px; letter-spacing: -.006em;
+    font-family: var(--ui); font-size: 13px; font-weight: 500;
+    line-height: 18px; letter-spacing: -.006em;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .value.unset { color: var(--muted); font-weight: 400; }
@@ -141,10 +143,10 @@
     transition: filter 120ms ease, opacity 120ms ease;
   }
   .pair-label {
-    font-size: 12px; font-weight: 500; color: var(--label);
-    letter-spacing: 0; line-height: 14px;
+    font-size: 13px; font-weight: 500; color: var(--label);
+    letter-spacing: 0; line-height: 18px;
   }
-  .pair-line { font-size: 14px; font-weight: 500; color: var(--ink); letter-spacing: -.006em; line-height: 20px; }
+  .pair-line { font-size: 13px; font-weight: 500; color: var(--ink); letter-spacing: -.006em; line-height: 18px; }
   .pair-note { font-size: 13px; color: var(--muted); line-height: 18px; }
 
   #footer {
@@ -156,7 +158,7 @@
     display: flex; align-items: center; justify-content: center;
     flex-grow: 1; height: 40px;
     border: 0; border-radius: var(--radius); background: var(--ink); color: #fff;
-    font-family: var(--ui); font-size: 14px; font-weight: 500; letter-spacing: -.006em;
+    font-family: var(--ui); font-size: 13px; font-weight: 500; letter-spacing: -.006em;
     cursor: pointer;
     /* Wider than the other buttons, so the same press reads heavier on it. */
     transition: transform 160ms var(--ease-out);
@@ -173,7 +175,7 @@
     position: fixed; top: 16px; right: 16px; z-index: 8;
     display: none; align-items: center; justify-content: center;
     width: 40px; height: 40px; padding: 0;
-    border: 1px solid var(--line); border-radius: 10px;
+    border: 1px solid var(--line); border-radius: var(--radius);
     background: #fff; color: var(--ink); box-shadow: var(--shadow); cursor: pointer;
     opacity: 0; scale: .95;
     transition: opacity 200ms var(--ease-out), scale 200ms var(--ease-out);
@@ -188,7 +190,7 @@
     position: fixed; z-index: 10;
     display: none; flex-direction: column;
     width: 260px; overflow-y: auto;
-    padding: 4px; border-radius: 12px; background: #fff;
+    padding: 4px; border-radius: var(--radius); background: #fff;
     border: 1px solid var(--line); box-shadow: 0 1px 2px rgba(0,0,0,.05), 0 18px 44px rgba(0,0,0,.14);
     font-family: var(--ui);
     /* Opens from the pill that owns it; the origin is set from the anchor. */
@@ -207,14 +209,14 @@
   }
   #menu::-webkit-scrollbar { width: 10px; }
   #menu::-webkit-scrollbar-thumb { background: var(--line); border-radius: 10px; border: 3.5px solid #fff; }
-  .sep { flex-shrink: 0; height: 1px; background: var(--line); margin: 4px 10px; }
+  .sep { flex-shrink: 0; height: 1px; background: var(--line); margin: 4px 12px; }
   .group {
-    padding: 8px 10px 4px; font-size: 11px; font-weight: 600;
+    padding: 8px 12px 4px; font-size: 13px; font-weight: 600;
     color: var(--label); letter-spacing: 0;
   }
   .row {
     display: flex; align-items: center; gap: 8px; width: 100%; flex-shrink: 0;
-    height: 32px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent;
+    padding: 9px 12px; border: 0; border-radius: 8px; background: transparent;
     cursor: pointer; text-align: left; color: var(--ink);
   }
   .row[data-active="true"] { background: var(--fill); }
@@ -222,21 +224,21 @@
   .row:focus { outline: 0; background: var(--fill); }
   .row .check { display: flex; align-items: center; justify-content: center; width: 16px; flex-shrink: 0; }
   .row .name {
-    flex-grow: 1; min-width: 0; font-family: var(--ui); font-size: 14px; font-weight: 400;
-    color: var(--ink); letter-spacing: -.006em; line-height: 20px;
+    flex-grow: 1; min-width: 0; font-family: var(--ui); font-size: 13px; font-weight: 400;
+    color: var(--ink); letter-spacing: -.006em; line-height: 18px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .row .name.muted { color: var(--muted); }
   .row .tag {
     flex-shrink: 0; font-family: var(--ui);
-    font-size: 12px; line-height: 12px; color: var(--muted); text-align: right;
+    font-size: 13px; line-height: 18px; color: var(--muted); text-align: right;
   }
 
   /* --- tooltip --- */
 
   #tip {
     position: fixed; z-index: 20; display: none; align-items: center; gap: 8px;
-    padding: 7px 10px; border-radius: var(--radius);
+    padding: 7px 10px; border-radius: 8px;
     background: var(--ink); color: #FAFAFA;
     font-family: var(--ui); font-size: 12px; font-weight: 500; line-height: 16px;
     letter-spacing: -.002em; pointer-events: none; white-space: nowrap;
@@ -255,7 +257,7 @@
     border-radius: 1px;
   }
   #tip[data-below="true"]::after { bottom: auto; top: -4px; }
-  /* Box shared with .sec-key; against the dark bubble only the colors change. */
+  /* Against the dark bubble only the colors change. */
   #tip .kbd {
     background: rgba(255,255,255,.13); border-color: rgba(255,255,255,.18);
     color: rgba(255,255,255,.72);
@@ -326,9 +328,9 @@
 <script type="module">
 const PREFIX = '/__fonts'
 const ROLES = [
-  { id: 'header', label: 'Header', key: 'h' },
-  { id: 'text',   label: 'Text',   key: 't' },
-  { id: 'mono',   label: 'Mono',   key: 'm' },
+  { id: 'header', label: 'Header' },
+  { id: 'text',   label: 'Text' },
+  { id: 'mono',   label: 'Mono' },
 ]
 const FALLBACK = {
   SANS_SERIF: 'system-ui, "Helvetica Neue", sans-serif',
@@ -850,7 +852,7 @@ function section(role) {
   sec.dataset.role = role
   const head = el('div', 'sec-head')
   const meta = ROLES.find((r) => r.id === role)
-  head.append(el('span', 'sec-title', meta.label), el('span', 'sec-key', meta.key.toUpperCase()))
+  head.append(el('span', 'sec-title', meta.label))
   sec.append(head, fontLane(role))
   // No axes without a family — the payload has nowhere to put them.
   if (s.font) {
@@ -1342,11 +1344,6 @@ addEventListener('keydown', (e) => {
     e.preventDefault()
     return themeBtn?.click()
   }
-  const role = ROLES.find((r) => r.key === k)
-  if (!role || document.body.classList.contains('collapsed')) return
-  e.preventDefault()
-  const anchor = bodyEl.querySelector(`.section[data-role="${role.id}"] .pill.font`)
-  if (anchor) openMenu('font', role.id, anchor, true)
 })
 
 render()

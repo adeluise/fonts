@@ -1,5 +1,5 @@
 {
-  "$comment": "Font data for the fonts skill. 'class' is a local enum, not a Google field. Pairing rule: two faces sharing a class value should not be paired. 'avoid_with' lists explicit exceptions and cross-class conflicts. 'roles' controls which picker slot a font appears in; the mono slot is optional. 'wght' is the variable weight range [min, max], null for static faces, which list their instances in 'weights' instead. 'wdth' is the variable width range [min, max] and is present only on faces carrying a wdth axis. 'note' and 'caution' are retained but unused in v1.",
+  "$comment": "Font data for the fonts skill. 'class' is a local enum, not a Google field. Pairing rule: two faces sharing a class value should not be paired. 'avoid_with' lists explicit exceptions and cross-class conflicts. 'roles' controls which picker slot a font appears in; the mono slot is optional. 'wght' is the variable weight range [min, max], null for static faces, which list their instances in 'weights' instead. 'wdth' is the variable width range [min, max] and is present only on faces carrying a wdth axis. 'note' and 'caution' are read by the skill when answering without the picker.",
   "classes": [
     "neo-grotesque",
     "geometric-sans",
@@ -462,6 +462,29 @@
       "wght": null
     },
     {
+      "name": "Besley",
+      "source": "google",
+      "class": "slab",
+      "stroke": "SERIF",
+      "roles": [
+        "header",
+        "text"
+      ],
+      "floor": null,
+      "opsz": null,
+      "axes": [
+        "wght"
+      ],
+      "weights": null,
+      "avoid_with": [],
+      "note": null,
+      "caution": null,
+      "wght": [
+        400,
+        900
+      ]
+    },
+    {
       "name": "Geist Mono",
       "source": "google",
       "class": "mono",
@@ -539,16 +562,5 @@
         800
       ]
     }
-  ],
-  "rules": [
-    "Two fonts sharing a class value should not be paired.",
-    "Get contrast from class or width, not weight.",
-    "Check for an opsz axis before adding a second family.",
-    "x-height decides apparent size, not font-size.",
-    "Serif body 1.7 line-height, sans 1.5.",
-    "Lines under 80 characters.",
-    "Large type gets negative tracking, capitals get positive.",
-    "One face with a floor per page.",
-    "Load only the weights you use."
   ]
 }
